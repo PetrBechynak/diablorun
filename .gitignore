@@ -1,0 +1,36 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# IDE/editor
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# Unity generated files
+*.tmp
+*.bak
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Download caches kept only for acquisition provenance if needed elsewhere
+Assets/Audio/ThirdParty/Downloads/
