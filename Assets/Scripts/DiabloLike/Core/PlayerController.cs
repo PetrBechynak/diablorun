@@ -26,9 +26,13 @@ namespace DiabloLike.Core
         private float swordRangeBonus;
         private bool splitWandProjectiles;
         private bool explodingWandProjectiles;
+        private bool splitAfterExplosion;
+        private bool hardenedBullet;
         private float projectileSizeBonus;
         private float cooldownMultiplier = 1f;
         private float nextAttackTime;
+        private GameObject swordVisual;
+        private GameObject wandVisual;
 
         private void Awake()
         {
@@ -40,9 +44,23 @@ namespace DiabloLike.Core
             CreateReachLine();
         }
 
+        private void Start()
+        {
+            CreateWeaponVisuals();
+        }
+
         public void EquipWeapon(WeaponDefinition nextWeapon)
         {
             weapon = nextWeapon;
+            if (swordVisual != null)
+            {
+                swordVisual.SetActive(weapon.Id == WeaponId.Sword);
+            }
+
+            if (wandVisual != null)
+            {
+                wandVisual.SetActive(weapon.Id != WeaponId.Sword);
+            }
         }
 
         public void AddMovementSpeed(float amount)
@@ -78,6 +96,16 @@ namespace DiabloLike.Core
         public void EnableExplodingWandProjectiles()
         {
             explodingWandProjectiles = true;
+        }
+
+        public void EnableHardenedBullet()
+        {
+            hardenedBullet = true;
+        }
+
+        public void SetSplitAfterExplosion(bool value)
+        {
+            splitAfterExplosion = value;
         }
 
         public void AddProjectileSize(float amount)
@@ -258,6 +286,71 @@ namespace DiabloLike.Core
             reachLine.material.color = new Color(1f, 0.03f, 0.02f, 0.85f);
         }
 
+        private void CreateWeaponVisuals()
+        {
+            swordVisual = new GameObject("Visible Sword");
+            swordVisual.transform.SetParent(FindRightHand() ?? transform, false);
+            swordVisual.transform.localPosition = new Vector3(0.04f, -0.04f, 0.08f);
+            swordVisual.transform.localRotation = Quaternion.Euler(18f, 0f, -28f);
+            swordVisual.transform.localScale = Vector3.one * 0.58f;
+            var blade = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            blade.name = "Sword Blade";
+            blade.transform.SetParent(swordVisual.transform, false);
+            blade.transform.localPosition = new Vector3(0f, 0.62f, 0f);
+            blade.transform.localScale = new Vector3(0.12f, 1.25f, 0.06f);
+            blade.GetComponent<Renderer>().material = CreateWeaponMaterial(new Color(0.72f, 0.78f, 0.88f));
+            Object.Destroy(blade.GetComponent<Collider>());
+            var guard = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            guard.name = "Sword Guard";
+            guard.transform.SetParent(swordVisual.transform, false);
+            guard.transform.localScale = new Vector3(0.48f, 0.1f, 0.1f);
+            guard.GetComponent<Renderer>().material = CreateWeaponMaterial(new Color(0.78f, 0.42f, 0.08f));
+            Object.Destroy(guard.GetComponent<Collider>());
+
+            wandVisual = new GameObject("Visible Ember Wand");
+            wandVisual.transform.SetParent(FindRightHand() ?? transform, false);
+            wandVisual.transform.localPosition = new Vector3(0.04f, -0.04f, 0.08f);
+            wandVisual.transform.localRotation = Quaternion.Euler(-12f, 0f, -12f);
+            wandVisual.transform.localScale = Vector3.one * 0.58f;
+            var staff = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            staff.name = "Wand Staff";
+            staff.transform.SetParent(wandVisual.transform, false);
+            staff.transform.localPosition = new Vector3(0f, 0.55f, 0f);
+            staff.transform.localScale = new Vector3(0.07f, 0.7f, 0.07f);
+            staff.GetComponent<Renderer>().material = CreateWeaponMaterial(new Color(0.3f, 0.12f, 0.04f));
+            Object.Destroy(staff.GetComponent<Collider>());
+            var crystal = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            crystal.name = "Wand Crystal";
+            crystal.transform.SetParent(wandVisual.transform, false);
+            crystal.transform.localPosition = new Vector3(0f, 1.32f, 0f);
+            crystal.transform.localScale = Vector3.one * 0.22f;
+            crystal.GetComponent<Renderer>().material = CreateWeaponMaterial(new Color(1f, 0.35f, 0.04f));
+            Object.Destroy(crystal.GetComponent<Collider>());
+
+            EquipWeapon(weapon);
+        }
+
+        private Transform FindRightHand()
+        {
+            foreach (var child in GetComponentsInChildren<Transform>(true))
+            {
+                var name = child.name.ToLowerInvariant().Replace(" ", "").Replace("-", "");
+                if (name.Contains("righthand") || name.Contains("hand_r") || name.Contains("hand.r"))
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        private static Material CreateWeaponMaterial(Color color)
+        {
+            var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            material.color = color;
+            return material;
+        }
+
         private void UpdateReachLine()
         {
             if (reachLine == null)
@@ -276,18 +369,31 @@ namespace DiabloLike.Core
             actorAnimator ??= GetComponent<ProceduralActorAnimator>();
             actorAnimator?.PlayAttack();
             DiabloAudio.Play(GameSfx.WandCast, 0.07f);
+            var direction = transform.forward;
+            SpawnWandProjectile(direction, CurrentWeaponDamage(), 1f);
+
+            if (splitWandProjectiles && !splitAfterExplosion)
+            {
+                SpawnWandProjectile(Quaternion.Euler(0f, -18f, 0f) * direction, CurrentWeaponDamage(), 0.58f);
+                SpawnWandProjectile(Quaternion.Euler(0f, 18f, 0f) * direction, CurrentWeaponDamage(), 0.58f);
+            }
+        }
+
+        private void SpawnWandProjectile(Vector3 direction, int baseDamage, float damageMultiplier)
+        {
             var projectile = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             projectile.name = "Wand Projectile";
-            projectile.transform.position = transform.position + transform.forward * 0.85f + Vector3.up * 0.85f;
-            projectile.transform.localScale = Vector3.one * (0.42f + projectileSizeBonus);
-            projectile.GetComponent<Renderer>().material = CreateProjectileMaterial();
+            projectile.transform.position = transform.position + direction.normalized * 0.85f + Vector3.up * 0.85f;
+            projectile.transform.localScale = Vector3.one * (hardenedBullet ? 0.5f : 0.42f) + Vector3.one * projectileSizeBonus;
+            projectile.GetComponent<Renderer>().material = CreateProjectileMaterial(hardenedBullet);
             var collider = projectile.GetComponent<SphereCollider>();
             collider.isTrigger = true;
             collider.radius = 0.85f + projectileSizeBonus;
             var body = projectile.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            projectile.AddComponent<WandProjectile>().Configure(transform.forward, CurrentWeaponDamage(), 10.5f, CurrentWeaponRange(), splitWandProjectiles, false, explodingWandProjectiles);
+            var damage = Mathf.Max(1, Mathf.RoundToInt(baseDamage * damageMultiplier * (hardenedBullet ? 1.5f : 1f)));
+            projectile.AddComponent<WandProjectile>().Configure(direction, damage, 10.5f, CurrentWeaponRange(), false, false, explodingWandProjectiles, splitAfterExplosion && damageMultiplier == 1f);
         }
 
         private int CurrentWeaponDamage()
@@ -300,10 +406,10 @@ namespace DiabloLike.Core
             return weapon.Range + (weapon.Id == WeaponId.Sword ? swordRangeBonus : wandRangeBonus);
         }
 
-        private static Material CreateProjectileMaterial()
+        private static Material CreateProjectileMaterial(bool hardened)
         {
             var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            material.color = new Color(0.2f, 0.55f, 1f);
+            material.color = hardened ? new Color(1f, 0.68f, 0.05f) : new Color(0.2f, 0.55f, 1f);
             return material;
         }
     }

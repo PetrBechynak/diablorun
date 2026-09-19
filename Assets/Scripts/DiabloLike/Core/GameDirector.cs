@@ -11,10 +11,12 @@ namespace DiabloLike.Core
 {
     public sealed class GameDirector : MonoBehaviour
     {
+        private const int MaxUpgradeSlots = 10;
         private readonly List<Health> enemies = new();
         private readonly List<SummoningPillar> pillars = new();
         private readonly List<string> recentEvents = new();
         private readonly List<ChestRewardOption> currentRewardOptions = new();
+        private readonly List<ChestRewardOption> acquiredUpgrades = new();
         private Transform player;
         private Health playerHealth;
         private Mana playerMana;
@@ -34,6 +36,7 @@ namespace DiabloLike.Core
         private float swordRangeBonus;
         private bool splitShotUnlocked;
         private bool explosionUnlocked;
+        private bool hardenedBulletUnlocked;
         private int armorBonus;
         private bool rareArmorUnlocked;
         private float projectileSizeBonus;
@@ -53,9 +56,9 @@ namespace DiabloLike.Core
         public int PlayerMaxMana => playerMana != null ? playerMana.Max : cachedPlayerMaxMana;
         public int PlayerArmor => playerHealth != null ? playerHealth.Armor : armorBonus;
         public WeaponDefinition EquippedWeapon { get; private set; } = WeaponCatalog.Sword;
-        public bool HasWandUpgrade { get; private set; }
         public bool IsRewardChoiceOpen => rewardChoiceOpen;
         public IReadOnlyList<ChestRewardOption> CurrentRewardOptions => currentRewardOptions;
+        public IReadOnlyList<ChestRewardOption> AcquiredUpgrades => acquiredUpgrades;
 
         private void Start()
         {
@@ -107,6 +110,11 @@ namespace DiabloLike.Core
             {
                 playerController.EnableExplodingWandProjectiles();
             }
+            if (hardenedBulletUnlocked)
+            {
+                playerController.EnableHardenedBullet();
+            }
+            RefreshUpgradePriority();
             cachedPlayerMaxHealth = playerHealth.Max;
             cachedPlayerMaxMana = playerMana.Max;
             playerHealth.Died += OnPlayerDied;
@@ -183,11 +191,6 @@ namespace DiabloLike.Core
 
         public void EquipWeapon(WeaponId weaponId)
         {
-            if (weaponId == WeaponId.MagicWand && HasWandUpgrade)
-            {
-                weaponId = WeaponId.EmberWand;
-            }
-
             EquippedWeapon = WeaponCatalog.Get(weaponId);
             playerController?.EquipWeapon(EquippedWeapon);
         }
@@ -298,16 +301,21 @@ namespace DiabloLike.Core
 
             rewardChoiceOpen = false;
             var reward = currentRewardOptions[optionIndex].Id;
+            var selectedUpgrade = currentRewardOptions[optionIndex];
             currentRewardOptions.Clear();
+            if (acquiredUpgrades.Count >= MaxUpgradeSlots)
+            {
+                acquiredUpgrades[MaxUpgradeSlots - 1] = selectedUpgrade;
+                ChatText = "Inventar je plny. Upgrade na 10. priorite byl nahrazen.";
+            }
+            else
+            {
+                acquiredUpgrades.Add(selectedUpgrade);
+            }
+            RefreshUpgradePriority();
             DiabloAudio.Play(GameSfx.ChestLoot, 0.05f);
             switch (reward)
             {
-                case ChestRewardId.WandUpgrade:
-                    HasWandUpgrade = true;
-                    EquippedWeapon = WeaponCatalog.EmberWand;
-                    playerController?.EquipWeapon(EquippedWeapon);
-                    ChatText = "Chestka probudila Ember Wand.";
-                    break;
                 case ChestRewardId.LifeUpgrade:
                     lifeBonus += 15;
                     playerHealth?.IncreaseMax(15);
@@ -355,6 +363,11 @@ namespace DiabloLike.Core
                     playerController?.EnableExplodingWandProjectiles();
                     ChatText = "Rare upgrade: wand projektily po zasahu vybuchuji.";
                     break;
+                case ChestRewardId.SuperRareHardenedBullet:
+                    hardenedBulletUnlocked = true;
+                    playerController?.EnableHardenedBullet();
+                    ChatText = "SUPER RARE: zlate hardened bullets davaji o 50 % vetsi damage.";
+                    break;
                 case ChestRewardId.Armor:
                     armorBonus += 1;
                     playerHealth?.IncreaseArmor(1);
@@ -389,6 +402,51 @@ namespace DiabloLike.Core
 
             QuestText = "Upgrade vybran. Portal do dalsiho levelu je otevreny.";
             SpawnPortal();
+        }
+
+        public void MoveUpgrade(int index, int direction)
+        {
+            var target = index + direction;
+            if (index < 0 || index >= acquiredUpgrades.Count || target < 0 || target >= acquiredUpgrades.Count)
+            {
+                return;
+            }
+
+            (acquiredUpgrades[index], acquiredUpgrades[target]) = (acquiredUpgrades[target], acquiredUpgrades[index]);
+            RefreshUpgradePriority();
+        }
+
+        public void RemoveUpgrade(int index)
+        {
+            if (index >= 0 && index < acquiredUpgrades.Count)
+            {
+                acquiredUpgrades.RemoveAt(index);
+                RefreshUpgradePriority();
+            }
+        }
+
+        private void RefreshUpgradePriority()
+        {
+            if (playerController == null)
+            {
+                return;
+            }
+
+            var explosionIndex = -1;
+            var splitIndex = -1;
+            for (var i = 0; i < acquiredUpgrades.Count; i++)
+            {
+                if (acquiredUpgrades[i].Id == ChestRewardId.RareExplosion)
+                {
+                    explosionIndex = i;
+                }
+                else if (acquiredUpgrades[i].Id == ChestRewardId.SplitShot)
+                {
+                    splitIndex = i;
+                }
+            }
+
+            playerController.SetSplitAfterExplosion(explosionIndex >= 0 && splitIndex >= 0 && explosionIndex < splitIndex);
         }
 
         public void EnterNextLevel()
@@ -455,14 +513,15 @@ namespace DiabloLike.Core
             swordRangeBonus = 0f;
             splitShotUnlocked = false;
             explosionUnlocked = false;
+            hardenedBulletUnlocked = false;
             armorBonus = 0;
             rareArmorUnlocked = false;
             projectileSizeBonus = 0f;
             cooldownMultiplier = 1f;
             carriedHealth = -1;
+            acquiredUpgrades.Clear();
             cachedPlayerMaxHealth = 0;
             cachedPlayerMaxMana = 0;
-            HasWandUpgrade = false;
             EquippedWeapon = WeaponCatalog.Sword;
         }
 
@@ -513,14 +572,9 @@ namespace DiabloLike.Core
                 new(ChestRewardId.Armor, "Dented Plate", "+1 armor\nless pain per hit")
             };
 
-            if (!HasWandUpgrade)
-            {
-                pool.Add(new ChestRewardOption(ChestRewardId.WandUpgrade, "Ember Wand", "upgrade wand\nprojectile hits harder"));
-            }
-
             var rareRound = dungeonLevel % 2 == 0;
 
-            if (HasWandUpgrade && !splitShotUnlocked && (rareRound || Random.value < 0.28f))
+            if (!splitShotUnlocked && (rareRound || Random.value < 0.28f))
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.SplitShot, "Split Hex", "RARE\nwand bullets split on hit", true));
             }
@@ -535,7 +589,7 @@ namespace DiabloLike.Core
                 pool.Add(new ChestRewardOption(ChestRewardId.RareSwordBleed, "Butcher Edge", "RARE\n+10 sword damage\n+0.15 reach", true));
             }
 
-            if (HasWandUpgrade && (rareRound || Random.value < 0.24f))
+            if (rareRound || Random.value < 0.24f)
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.RareWandBigBullet, "Fat Spark", "RARE\nbigger wand bullets\n+4 damage", true));
             }
@@ -548,6 +602,11 @@ namespace DiabloLike.Core
             if (rareRound)
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.RareExplosion, "Blast Core", "RARE\nwand projectiles explode on hit", true));
+            }
+
+            if (Random.value < 0.06f)
+            {
+                pool.Add(new ChestRewardOption(ChestRewardId.SuperRareHardenedBullet, "Hardened Bullet", "SUPER RARE\ngold bullets\n+50% wand damage", true));
             }
 
             while (currentRewardOptions.Count < 3 && pool.Count > 0)

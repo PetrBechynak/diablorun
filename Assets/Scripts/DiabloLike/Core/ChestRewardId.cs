@@ -2,7 +2,6 @@ namespace DiabloLike.Core
 {
     public enum ChestRewardId
     {
-        WandUpgrade,
         LifeUpgrade,
         ManaUpgrade,
         MovementSpeed,
@@ -16,6 +15,7 @@ namespace DiabloLike.Core
         RareSwordBleed,
         RareWandBigBullet,
         RareSwiftCast,
-        RareExplosion
+        RareExplosion,
+        SuperRareHardenedBullet
     }
 }

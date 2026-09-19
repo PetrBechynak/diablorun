@@ -9,6 +9,7 @@ namespace DiabloLike.UI
     {
         private GameDirector director;
         private string chatInput = "";
+        private Vector2 upgradeScrollPosition;
 
         public void Configure(GameDirector gameDirector)
         {
@@ -103,7 +104,7 @@ namespace DiabloLike.UI
             }
 
             var width = 340f;
-            var height = 264f;
+            var height = 470f;
             var x = Screen.width - width - 24f;
             var y = Screen.height - height - 28f;
             DrawRect(new Rect(x, y, width, height), new Color(0.025f, 0.018f, 0.015f, 0.94f));
@@ -115,11 +116,65 @@ namespace DiabloLike.UI
             GUI.Label(new Rect(x + 228f, y + 50f, 90f, 24f), $"Armor {director.PlayerArmor}");
 
             DrawWeaponSlot(new Rect(x + 18f, y + 84f, 206f, 66f), WeaponCatalog.Sword);
-            DrawWeaponSlot(new Rect(x + 18f, y + 158f, 206f, 66f), director.HasWandUpgrade ? WeaponCatalog.EmberWand : WeaponCatalog.MagicWand);
+            DrawWeaponSlot(new Rect(x + 18f, y + 158f, 206f, 66f), WeaponCatalog.EmberWand);
             DrawArmorSlots(new Rect(x + 246f, y + 84f, 76f, 140f));
+            DrawAcquiredUpgrades(new Rect(x + 18f, y + 238f, width - 36f, height - 252f));
 
             GUI.color = Color.white;
-            GUI.Label(new Rect(x + 18f, y + 232f, width - 36f, 22f), "Klikni na zbran pro equip. Tab zavre panel.");
+            GUI.Label(new Rect(x + 18f, y + height - 24f, width - 36f, 22f), "Q = vyhodit upgrade pod kurzorem. Sipky = priorita.");
+        }
+
+        private void DrawAcquiredUpgrades(Rect rect)
+        {
+            DrawRect(rect, new Color(0.06f, 0.035f, 0.025f, 0.95f));
+            var upgrades = director.AcquiredUpgrades;
+            var contentHeight = Mathf.Max(rect.height, 42f + upgrades.Count * 30f);
+            var viewRect = new Rect(rect.x + 4f, rect.y + 4f, rect.width - 8f, rect.height - 8f);
+            var contentRect = new Rect(0f, 0f, viewRect.width - 18f, contentHeight);
+            upgradeScrollPosition = GUI.BeginScrollView(viewRect, upgradeScrollPosition, contentRect);
+
+            GUI.color = Color.white;
+            GUI.Label(new Rect(10f, 8f, contentRect.width - 20f, 22f), $"Upgrades / priorita ({upgrades.Count}/10)");
+
+            for (var i = 0; i < upgrades.Count; i++)
+            {
+                var row = new Rect(8f, 34f + i * 30f, contentRect.width - 16f, 26f);
+                var option = upgrades[i];
+                DrawRect(row, option.IsRare ? new Color(0.22f, 0.07f, 0.2f, 1f) : new Color(0.12f, 0.075f, 0.04f, 1f));
+                GUI.color = option.TitleColor;
+                GUI.Label(new Rect(row.x + 8f, row.y + 4f, row.width - 82f, 20f), $"{i + 1}. {option.Title}");
+
+                GUI.color = Color.white;
+                if (GUI.Button(new Rect(row.x + row.width - 68f, row.y + 2f, 20f, 22f), "▲") && i > 0)
+                {
+                    director.MoveUpgrade(i, -1);
+                }
+
+                if (GUI.Button(new Rect(row.x + row.width - 44f, row.y + 2f, 20f, 22f), "▼") && i < upgrades.Count - 1)
+                {
+                    director.MoveUpgrade(i, 1);
+                }
+
+                var screenRow = new Rect(
+                    rect.x + row.x,
+                    rect.y + row.y - upgradeScrollPosition.y,
+                    row.width,
+                    row.height);
+                if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Q && screenRow.Contains(Event.current.mousePosition))
+                {
+                    director.RemoveUpgrade(i);
+                    Event.current.Use();
+                    break;
+                }
+            }
+
+            if (upgrades.Count == 0)
+            {
+                GUI.color = new Color(0.7f, 0.65f, 0.6f, 1f);
+                GUI.Label(new Rect(10f, 36f, contentRect.width - 20f, 22f), "Zadne upgrady.");
+            }
+
+            GUI.EndScrollView();
         }
 
         private void DrawArmorSlots(Rect rect)

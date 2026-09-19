@@ -12,11 +12,12 @@ namespace DiabloLike.Core
         private float maxDistance;
         private bool splitsOnHit;
         private bool explodesOnHit;
+        private bool splitsAfterExplosion;
         private bool isSplitChild;
         private Vector3 startPosition;
         private Vector3 direction;
 
-        public void Configure(Vector3 moveDirection, int projectileDamage, float projectileSpeed, float range, bool canSplit = false, bool splitChild = false, bool canExplode = false)
+        public void Configure(Vector3 moveDirection, int projectileDamage, float projectileSpeed, float range, bool canSplit = false, bool splitChild = false, bool canExplode = false, bool splitAfterExplosion = false)
         {
             direction = moveDirection.normalized;
             damage = projectileDamage;
@@ -25,6 +26,7 @@ namespace DiabloLike.Core
             splitsOnHit = canSplit;
             isSplitChild = splitChild;
             explodesOnHit = canExplode;
+            splitsAfterExplosion = splitAfterExplosion;
             startPosition = transform.position;
         }
 
@@ -60,6 +62,12 @@ namespace DiabloLike.Core
             if (explodesOnHit)
             {
                 Explode();
+            }
+
+            if (splitsAfterExplosion && !isSplitChild)
+            {
+                SpawnSplitProjectile(Quaternion.Euler(0f, -18f, 0f) * direction);
+                SpawnSplitProjectile(Quaternion.Euler(0f, 18f, 0f) * direction);
             }
 
             Destroy(gameObject);
