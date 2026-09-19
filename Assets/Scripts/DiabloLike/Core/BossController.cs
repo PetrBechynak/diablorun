@@ -20,12 +20,13 @@ namespace DiabloLike.Core
         private float nextMeleeTime;
         private float moveSpeed;
         private int damageBonus;
+        private float strengthMultiplier = 1f;
         private bool dashing;
         private bool dashWarningActive;
         private float dashTimer;
         private Vector3 dashDirection;
 
-        public void Configure(Transform player, int level)
+        public void Configure(Transform player, int level, bool miniBoss = false)
         {
             target = player;
             targetHealth = player.GetComponent<Health>();
@@ -39,6 +40,7 @@ namespace DiabloLike.Core
             nextMeleeTime = Time.time + 1f;
             moveSpeed = 1.4f + level * 0.12f;
             damageBonus = Mathf.Max(0, level - 9) / 9 * 4;
+            strengthMultiplier = miniBoss ? 0.25f : 1f;
         }
 
         private void Update()
@@ -82,7 +84,7 @@ namespace DiabloLike.Core
             toPlayer.y = 0f;
             if (toPlayer.magnitude <= 11f && Vector3.Angle(direction, toPlayer.normalized) <= 8f)
             {
-                targetHealth.TakeDamage((18 + damageBonus) * 2);
+                targetHealth.TakeDamage(Mathf.RoundToInt((18 + damageBonus) * 2 * strengthMultiplier));
                 EffectFactory.SpawnHit(target.position);
             }
         }
@@ -96,7 +98,7 @@ namespace DiabloLike.Core
             if (distance <= 2.4f && Time.time >= nextMeleeTime)
             {
                 nextMeleeTime = Time.time + 0.85f;
-                targetHealth.TakeDamage((30 + damageBonus) * 2);
+                targetHealth.TakeDamage(Mathf.RoundToInt((30 + damageBonus) * 2 * strengthMultiplier));
                 EffectFactory.SpawnHit(target.position);
             }
 
@@ -122,7 +124,7 @@ namespace DiabloLike.Core
             var body = projectile.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            projectile.AddComponent<EnemyProjectile>().Configure(direction, (22 + damageBonus) * 2, 9f + moveSpeed, 12f);
+            projectile.AddComponent<EnemyProjectile>().Configure(direction, Mathf.RoundToInt((22 + damageBonus) * 2 * strengthMultiplier), 9f + moveSpeed, 12f);
         }
 
         private void UpdateDash()
@@ -133,7 +135,7 @@ namespace DiabloLike.Core
                 controller.Move(dashDirection * (13f * Time.deltaTime));
                 if (Vector3.Distance(transform.position, target.position) < 1.2f)
                 {
-                    targetHealth.TakeDamage(36);
+                    targetHealth.TakeDamage(Mathf.RoundToInt(36 * strengthMultiplier));
                     EffectFactory.SpawnHit(target.position);
                 }
 

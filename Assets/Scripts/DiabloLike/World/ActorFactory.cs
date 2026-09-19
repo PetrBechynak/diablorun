@@ -56,20 +56,21 @@ namespace DiabloLike.World
             return enemy;
         }
 
-        public static GameObject CreateBoss(Vector3 position, Transform player, int level)
+        public static GameObject CreateBoss(Vector3 position, Transform player, int level, bool miniBoss = false)
         {
-            var boss = new GameObject("Boss - Rotmaw");
+            var boss = new GameObject(miniBoss ? "MiniBoss - Rotmaw" : "Boss - Rotmaw");
             boss.transform.position = position;
             var controller = boss.AddComponent<CharacterController>();
             controller.height = 2.8f;
             controller.radius = 0.85f;
             controller.center = Vector3.up * 1.4f;
-            boss.AddComponent<Health>().Configure((900 + level * 45) * 2);
+            var healthMultiplier = miniBoss ? 0.25f : 1f;
+            boss.AddComponent<Health>().Configure(Mathf.RoundToInt((900 + level * 45) * 2 * healthMultiplier));
             boss.AddComponent<CombatFaction>().Configure(Faction.Enemy);
             boss.AddComponent<EnemyHealthBar>();
             var modelRoot = ModelFactory.BuildEnemyModel(boss.transform, false);
-            modelRoot.localScale = Vector3.one * 1.8f;
-            boss.AddComponent<BossController>().Configure(player, level);
+            modelRoot.localScale = Vector3.one * (miniBoss ? 1.35f : 1.8f);
+            boss.AddComponent<BossController>().Configure(player, level, miniBoss);
             EffectFactory.SpawnEnemyArrival(position);
             DiabloAudio.Play(GameSfx.EnemySpawn, 0.12f);
             return boss;

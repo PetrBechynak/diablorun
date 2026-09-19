@@ -81,7 +81,7 @@ namespace DiabloLike.Core
             ChatText = $"Lovec: Level {dungeonLevel}. Kruh se probouzi.";
 
             ArenaFactory.BuildArena();
-            if (!IsBossLevel())
+            if (!IsBossLevel() && !IsMiniBossLevel())
             {
                 CreateSummoningPillars();
             }
@@ -131,9 +131,9 @@ namespace DiabloLike.Core
             }
 
             hud.Configure(this);
-            if (IsBossLevel())
+            if (IsBossLevel() || IsMiniBossLevel())
             {
-                SpawnBoss();
+                SpawnBoss(IsMiniBossLevel());
             }
             else
             {
@@ -268,13 +268,18 @@ namespace DiabloLike.Core
             return dungeonLevel > 0 && dungeonLevel % 9 == 0;
         }
 
-        private void SpawnBoss()
+        private bool IsMiniBossLevel()
         {
-            var boss = ActorFactory.CreateBoss(new Vector3(0f, 0f, 6f), player, dungeonLevel);
+            return !IsBossLevel() && dungeonLevel > 0 && dungeonLevel % 4 == 0;
+        }
+
+        private void SpawnBoss(bool miniBoss)
+        {
+            var boss = ActorFactory.CreateBoss(new Vector3(0f, 0f, 6f), player, dungeonLevel, miniBoss);
             var health = boss.GetComponent<Health>();
             health.Died += OnEnemyDied;
             enemies.Add(health);
-            var minionCount = Mathf.Clamp(2 + dungeonLevel / 9, 2, 5);
+            var minionCount = miniBoss ? 1 : Mathf.Clamp(2 + dungeonLevel / 9, 2, 5);
             for (var i = 0; i < minionCount; i++)
             {
                 var angle = i * Mathf.PI * 2f / minionCount;
@@ -286,9 +291,9 @@ namespace DiabloLike.Core
                 minionHealth.Died += OnEnemyDied;
                 enemies.Add(minionHealth);
             }
-            QuestText = "BOSS FIGHT: zlom Rotmaw a prezij jeho laser a dash.";
-            ChatText = "Rotmaw: Utec, nebo shoříš.";
-            AddEvent("Boss Rotmaw vstoupil do runoveho kruhu.");
+            QuestText = miniBoss ? "MINI BOSS: zlom Rotmawovu ozvenu." : "BOSS FIGHT: zlom Rotmaw a prezij jeho laser a dash.";
+            ChatText = miniBoss ? "Rotmawova ozvena: nejsem tak velky, ale porad boli." : "Rotmaw: Utec, nebo shoříš.";
+            AddEvent(miniBoss ? "MiniBoss Rotmaw vstoupil do runoveho kruhu." : "Boss Rotmaw vstoupil do runoveho kruhu.");
         }
 
         private void OnEnemyDied(Health enemy)
@@ -341,7 +346,14 @@ namespace DiabloLike.Core
             var reward = currentRewardOptions[optionIndex].Id;
             var selectedUpgrade = currentRewardOptions[optionIndex];
             currentRewardOptions.Clear();
-            if (acquiredUpgrades.Count >= MaxUpgradeSlots)
+            var existingIndex = acquiredUpgrades.FindIndex(upgrade => upgrade.Id == selectedUpgrade.Id);
+            if (existingIndex >= 0)
+            {
+                var existing = acquiredUpgrades[existingIndex];
+                acquiredUpgrades[existingIndex] = new ChestRewardOption(existing.Id, existing.Title, existing.Body, existing.IsRare, existing.StackCount + 1);
+                ChatText = $"Upgrade {existing.Title} se sloucil a zesilil o 20 %.";
+            }
+            else if (acquiredUpgrades.Count >= MaxUpgradeSlots)
             {
                 acquiredUpgrades[MaxUpgradeSlots - 1] = selectedUpgrade;
                 ChatText = "Inventar je plny. Upgrade na 10. priorite byl nahrazen.";
@@ -710,6 +722,7 @@ namespace DiabloLike.Core
                 || objectName.StartsWith("Possessed")
                 || objectName.StartsWith("Vlkodlak")
                 || objectName.StartsWith("Boss -")
+                || objectName.StartsWith("MiniBoss -")
                 || objectName.StartsWith("Enemy Projectile")
                 || objectName.StartsWith("Boss Projectile")
                 || objectName.StartsWith("Ashen Arena Floor")

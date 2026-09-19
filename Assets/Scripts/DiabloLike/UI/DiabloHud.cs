@@ -142,7 +142,7 @@ namespace DiabloLike.UI
                 var option = upgrades[i];
                 DrawRect(row, option.IsSuperRare ? new Color(0.95f, 0.58f, 0.03f, 1f) : option.IsRare ? new Color(0.22f, 0.07f, 0.2f, 1f) : new Color(0.12f, 0.075f, 0.04f, 1f));
                 GUI.color = option.TitleColor;
-                GUI.Label(new Rect(row.x + 8f, row.y + 4f, row.width - 82f, 20f), $"{i + 1}. {option.Title}");
+                GUI.Label(new Rect(row.x + 8f, row.y + 4f, row.width - 82f, 20f), $"{i + 1}. {option.Title}{(option.StackCount > 1 ? $"  x{option.StackCount}" : "")}");
 
                 GUI.color = Color.white;
                 if (GUI.Button(new Rect(row.x + row.width - 68f, row.y + 2f, 20f, 22f), "▲") && i > 0)
