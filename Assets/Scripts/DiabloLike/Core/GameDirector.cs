@@ -416,7 +416,7 @@ namespace DiabloLike.Core
                 case ChestRewardId.SuperRareHardenedBullet:
                     hardenedBulletUnlocked = true;
                     playerController?.EnableHardenedBullet();
-                    ChatText = "SUPER RARE: zlate hardened bullets davaji o 50 % vetsi damage.";
+                    ChatText = "SUPER RARE: zlate hardened bullets davaji o 20 % vetsi damage.";
                     break;
                 case ChestRewardId.Armor:
                     armorBonus += 1;
@@ -614,7 +614,7 @@ namespace DiabloLike.Core
             {
                 currentRewardOptions.Add(new ChestRewardOption(ChestRewardId.SplitShot, "Split Hex", "RARE\nwand bullets split immediately", true));
                 currentRewardOptions.Add(new ChestRewardOption(ChestRewardId.RareExplosion, "Blast Core", "RARE\nwand projectiles explode on hit", true));
-                currentRewardOptions.Add(new ChestRewardOption(ChestRewardId.SuperRareHardenedBullet, "Hardened Bullet", "SUPER RARE\ngold bullets\n+50% wand damage", true));
+                currentRewardOptions.Add(new ChestRewardOption(ChestRewardId.SuperRareHardenedBullet, "Hardened Bullet", "SUPER RARE\ngold bullets\n+20% wand damage", true));
                 return;
             }
             var pool = new List<ChestRewardOption>
@@ -663,7 +663,7 @@ namespace DiabloLike.Core
 
             if (Random.value < 0.06f)
             {
-                pool.Add(new ChestRewardOption(ChestRewardId.SuperRareHardenedBullet, "Hardened Bullet", "SUPER RARE\ngold bullets\n+50% wand damage", true));
+                pool.Add(new ChestRewardOption(ChestRewardId.SuperRareHardenedBullet, "Hardened Bullet", "SUPER RARE\ngold bullets\n+20% wand damage", true));
             }
 
             while (currentRewardOptions.Count < 3 && pool.Count > 0)

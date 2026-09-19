@@ -384,7 +384,7 @@ namespace DiabloLike.Core
             var projectile = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             projectile.name = "Wand Projectile";
             projectile.transform.position = transform.position + direction.normalized * 0.85f + Vector3.up * 0.85f;
-            projectile.transform.localScale = Vector3.one * (hardenedBullet ? 0.5f : 0.42f) + Vector3.one * projectileSizeBonus;
+            projectile.transform.localScale = Vector3.one * (hardenedBullet ? 0.46f : 0.42f) + Vector3.one * projectileSizeBonus;
             projectile.GetComponent<Renderer>().material = CreateProjectileMaterial(hardenedBullet);
             var collider = projectile.GetComponent<SphereCollider>();
             collider.isTrigger = true;
@@ -392,7 +392,7 @@ namespace DiabloLike.Core
             var body = projectile.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            var damage = Mathf.Max(1, Mathf.RoundToInt(baseDamage * damageMultiplier * (hardenedBullet ? 1.5f : 1f)));
+            var damage = Mathf.Max(1, Mathf.RoundToInt(baseDamage * damageMultiplier * (hardenedBullet ? 1.2f : 1f)));
             projectile.AddComponent<WandProjectile>().Configure(direction, damage, 10.5f, CurrentWeaponRange(), false, false, explodingWandProjectiles, splitAfterExplosion && damageMultiplier == 1f);
         }
 
