@@ -79,6 +79,7 @@ namespace DiabloLike.Core
             var toAiTarget = aiMoveTarget - transform.position;
             var activeAttackRange = ranged ? rangedAttackRange : attackRange;
             var moveDirection = ChooseMoveDirection(toPlayer, toAiTarget, activeAttackRange);
+            moveDirection = AvoidLava(moveDirection);
             controller.SimpleMove(moveDirection * speed);
             actorAnimator?.SetMoving(moveDirection.sqrMagnitude > 0.01f);
 
@@ -113,6 +114,20 @@ namespace DiabloLike.Core
                 TryBark(EnemyBarkEvent.HitPlayer, 0.38f);
                 DiabloAudio.Play(GameSfx.SwordHit, 0.08f);
             }
+        }
+
+        private Vector3 AvoidLava(Vector3 direction)
+        {
+            var position = transform.position;
+            var inLowerRiver = Mathf.Abs(position.z + 3.1f) < 0.9f && Mathf.Abs(position.x) > 1.3f;
+            var inUpperRiver = Mathf.Abs(position.z - 3.1f) < 0.9f && Mathf.Abs(position.x) > 1.3f;
+            if (!inLowerRiver && !inUpperRiver)
+            {
+                return direction;
+            }
+
+            var escape = new Vector3(0f, 0f, position.z < 0f ? 1f : -1f);
+            return escape;
         }
 
         private Vector3 ChooseMoveDirection(Vector3 toPlayer, Vector3 toAiTarget, float activeAttackRange)

@@ -62,6 +62,10 @@ namespace DiabloLike.Core
             direction.y = 0f;
             if (direction.magnitude > 3.2f)
             {
+                if (Mathf.Abs(transform.position.z + 3.1f) < 0.9f || Mathf.Abs(transform.position.z - 3.1f) < 0.9f)
+                {
+                    direction = new Vector3(0f, 0f, transform.position.z < 0f ? 1f : -1f);
+                }
                 controller.SimpleMove(direction.normalized * moveSpeed);
             }
         }
@@ -84,7 +88,7 @@ namespace DiabloLike.Core
             toPlayer.y = 0f;
             if (toPlayer.magnitude <= 11f && Vector3.Angle(direction, toPlayer.normalized) <= 8f)
             {
-                targetHealth.TakeDamage(Mathf.RoundToInt((18 + damageBonus) * 2 * strengthMultiplier));
+                DamagePlayerThird();
                 EffectFactory.SpawnHit(target.position);
             }
         }
@@ -98,7 +102,7 @@ namespace DiabloLike.Core
             if (distance <= 2.4f && Time.time >= nextMeleeTime)
             {
                 nextMeleeTime = Time.time + 0.85f;
-                targetHealth.TakeDamage(Mathf.RoundToInt((30 + damageBonus) * 2 * strengthMultiplier));
+                DamagePlayerThird();
                 EffectFactory.SpawnHit(target.position);
             }
 
@@ -124,7 +128,7 @@ namespace DiabloLike.Core
             var body = projectile.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            projectile.AddComponent<EnemyProjectile>().Configure(direction, Mathf.RoundToInt((22 + damageBonus) * 2 * strengthMultiplier), 9f + moveSpeed, 12f);
+            projectile.AddComponent<EnemyProjectile>().Configure(direction, Mathf.Max(1, Mathf.CeilToInt(targetHealth.Max / 3f)), 9f + moveSpeed, 12f);
         }
 
         private void UpdateDash()
@@ -135,7 +139,7 @@ namespace DiabloLike.Core
                 controller.Move(dashDirection * (13f * Time.deltaTime));
                 if (Vector3.Distance(transform.position, target.position) < 1.2f)
                 {
-                    targetHealth.TakeDamage(Mathf.RoundToInt(36 * strengthMultiplier));
+                    DamagePlayerThird();
                     EffectFactory.SpawnHit(target.position);
                 }
 
@@ -165,6 +169,14 @@ namespace DiabloLike.Core
                 dashWarningActive = false;
                 dashing = true;
                 dashTimer = 0f;
+            }
+        }
+
+        private void DamagePlayerThird()
+        {
+            if (targetHealth != null && !targetHealth.IsDead)
+            {
+                targetHealth.TakeDamage(Mathf.Max(1, Mathf.CeilToInt(targetHealth.Max / 3f)));
             }
         }
 

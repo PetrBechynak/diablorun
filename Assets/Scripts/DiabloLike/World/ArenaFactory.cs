@@ -101,14 +101,14 @@ namespace DiabloLike.World
             var bridgeMaterial = CreateMaterial(new Color(0.25f, 0.12f, 0.055f));
             var bridgeTrimMaterial = CreateMaterial(new Color(0.42f, 0.24f, 0.09f));
 
-            CreateLavaRiver(new Vector3(0f, 0.015f, -3.1f), new Vector3(24f, 0.035f, 1.35f), lavaMaterial, lavaGlowMaterial);
-            CreateLavaRiver(new Vector3(0f, 0.02f, 3.1f), new Vector3(24f, 0.035f, 1.35f), lavaMaterial, lavaGlowMaterial);
+            CreateLavaRiver(new Vector3(0f, 0.015f, -3.1f), new Vector3(24f, 0.035f, 1.35f), lavaMaterial, lavaGlowMaterial, -4.8f, 4.8f);
+            CreateLavaRiver(new Vector3(0f, 0.02f, 3.1f), new Vector3(24f, 0.035f, 1.35f), lavaMaterial, lavaGlowMaterial, 0f);
             CreateBridge(new Vector3(-4.8f, 0.1f, -3.1f), bridgeMaterial, bridgeTrimMaterial);
             CreateBridge(new Vector3(4.8f, 0.1f, -3.1f), bridgeMaterial, bridgeTrimMaterial);
             CreateBridge(new Vector3(0f, 0.1f, 3.1f), bridgeMaterial, bridgeTrimMaterial);
         }
 
-        private static void CreateLavaRiver(Vector3 position, Vector3 scale, Material lavaMaterial, Material glowMaterial)
+        private static void CreateLavaRiver(Vector3 position, Vector3 scale, Material lavaMaterial, Material glowMaterial, params float[] bridgePositions)
         {
             var lava = GameObject.CreatePrimitive(PrimitiveType.Cube);
             lava.name = "Arena Decoration - Lava River";
@@ -116,6 +116,9 @@ namespace DiabloLike.World
             lava.transform.localScale = scale;
             lava.GetComponent<Renderer>().material = lavaMaterial;
             Object.Destroy(lava.GetComponent<Collider>());
+            var lavaCollider = lava.AddComponent<BoxCollider>();
+            lavaCollider.isTrigger = true;
+            lava.AddComponent<LavaHazard>().Configure(bridgePositions);
 
             for (var i = -5; i <= 5; i++)
             {
