@@ -98,27 +98,16 @@ namespace DiabloLike.World
 
         private static void CreateRuneRing()
         {
-            var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            material.color = new Color(0.85f, 0.08f, 0.04f);
-
+            var material = CreateMaterial(new Color(0.85f, 0.08f, 0.04f));
             for (var i = 0; i < 20; i++)
             {
                 var angle = i * Mathf.PI * 2f / 20f;
-                var position = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 5f;
-#if UNITY_EDITOR
-                var pillarAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
-                    "Assets/Low Poly Trim Sheet Asset Collection/TrimSheet_Prefabs/PillarDeco.prefab");
-                var rune = pillarAsset != null ? Object.Instantiate(pillarAsset) : GameObject.CreatePrimitive(PrimitiveType.Cube);
-                var importedPillar = pillarAsset != null;
-#else
                 var rune = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                var importedPillar = false;
-#endif
                 rune.name = "Rune Pillar";
-                rune.transform.position = position;
+                rune.transform.position = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 5f;
                 rune.transform.rotation = Quaternion.Euler(0f, -angle * Mathf.Rad2Deg, 0f);
-                rune.transform.localScale = importedPillar ? Vector3.one * 0.7f : new Vector3(0.22f, 0.1f, 0.75f);
-                if (!importedPillar) rune.GetComponent<Renderer>().material = material;
+                rune.transform.localScale = new Vector3(0.22f, 0.1f, 0.75f);
+                rune.GetComponent<Renderer>().material = material;
             }
         }
 
@@ -139,12 +128,13 @@ namespace DiabloLike.World
                 NormalizeImportedMaterials(rock);
                 rock.transform.position = position + Vector3.up * Random.Range(0.2f, 0.55f);
                 rock.transform.rotation = Random.rotation;
-                rock.transform.localScale = Vector3.one * Random.Range(0.35f, 0.8f);
+                rock.transform.localScale = Vector3.one * Random.Range(0.35f, 0.8f) * 0.3f;
                 if (rock.GetComponentInChildren<Renderer>() == null)
                 {
                     rock.GetComponent<Renderer>().material = stoneMaterial;
                 }
                 foreach (var collider in rock.GetComponentsInChildren<Collider>()) Object.Destroy(collider);
+                AddSolidRockCollider(rock);
             }
 
             for (var i = 0; i < 8; i++)
@@ -264,6 +254,30 @@ namespace DiabloLike.World
             if (asset != null) return Object.Instantiate(asset);
 #endif
             return GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        }
+
+        private static void AddSolidRockCollider(GameObject rock)
+        {
+            var renderers = rock.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+            {
+                var fallback = rock.AddComponent<SphereCollider>();
+                fallback.radius = 0.35f;
+                return;
+            }
+
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            var collider = rock.AddComponent<SphereCollider>();
+            collider.center = rock.transform.InverseTransformPoint(bounds.center);
+            var largestSize = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+            var largestScale = Mathf.Max(0.001f, Mathf.Max(rock.transform.lossyScale.x,
+                Mathf.Max(rock.transform.lossyScale.y, rock.transform.lossyScale.z)));
+            collider.radius = largestSize / largestScale * 0.32f;
         }
 
         private static void NormalizeImportedMaterials(GameObject root)
