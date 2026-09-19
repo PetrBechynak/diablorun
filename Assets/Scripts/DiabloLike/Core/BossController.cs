@@ -128,7 +128,7 @@ namespace DiabloLike.Core
             var body = projectile.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            projectile.AddComponent<EnemyProjectile>().Configure(direction, Mathf.Max(1, Mathf.CeilToInt(targetHealth.Max / 3f)), 9f + moveSpeed, 12f);
+            projectile.AddComponent<EnemyProjectile>().Configure(direction, Mathf.Max(1, Mathf.CeilToInt(targetHealth.Max / 9f)), 9f + moveSpeed, 12f);
         }
 
         private void UpdateDash()
@@ -176,7 +176,7 @@ namespace DiabloLike.Core
         {
             if (targetHealth != null && !targetHealth.IsDead)
             {
-                targetHealth.TakeDamage(Mathf.Max(1, Mathf.CeilToInt(targetHealth.Max / 3f)));
+                targetHealth.TakeDamage(Mathf.Max(1, Mathf.CeilToInt(targetHealth.Max / 9f)));
             }
         }
 
