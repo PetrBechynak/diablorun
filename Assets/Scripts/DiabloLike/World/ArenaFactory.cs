@@ -1,4 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace DiabloLike.World
 {
@@ -15,14 +18,72 @@ namespace DiabloLike.World
 
         private static void CreateFloor()
         {
-            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            floor.name = "Ashen Arena Floor";
-            floor.transform.position = new Vector3(0f, -0.55f, 0f);
-            floor.transform.localScale = new Vector3(28f, 1f, 28f);
+            const int gridSize = 32;
+            const float worldSize = 28f;
+            const float baseHeight = -0.08f;
+            const float waveHeight = 0.12f;
+            var floor = new GameObject("Rocky Grass Arena Floor");
+            var meshFilter = floor.AddComponent<MeshFilter>();
+            var meshRenderer = floor.AddComponent<MeshRenderer>();
+            var meshCollider = floor.AddComponent<MeshCollider>();
+
+            var vertices = new Vector3[(gridSize + 1) * (gridSize + 1)];
+            var uv = new Vector2[vertices.Length];
+            var triangles = new int[gridSize * gridSize * 6];
+            for (var z = 0; z <= gridSize; z++)
+            {
+                for (var x = 0; x <= gridSize; x++)
+                {
+                    var index = z * (gridSize + 1) + x;
+                    var px = (x / (float)gridSize - 0.5f) * worldSize;
+                    var pz = (z / (float)gridSize - 0.5f) * worldSize;
+                    var height = Mathf.PerlinNoise((px + 40f) * 0.12f, (pz + 40f) * 0.12f) * waveHeight;
+                    vertices[index] = new Vector3(px, baseHeight + height, pz);
+                    uv[index] = new Vector2(x / (float)gridSize * 8f, z / (float)gridSize * 8f);
+                }
+            }
+
+            var triangleIndex = 0;
+            for (var z = 0; z < gridSize; z++)
+            {
+                for (var x = 0; x < gridSize; x++)
+                {
+                    var a = z * (gridSize + 1) + x;
+                    var b = a + 1;
+                    var c = a + gridSize + 1;
+                    var d = c + 1;
+                    triangles[triangleIndex++] = a;
+                    triangles[triangleIndex++] = c;
+                    triangles[triangleIndex++] = b;
+                    triangles[triangleIndex++] = b;
+                    triangles[triangleIndex++] = c;
+                    triangles[triangleIndex++] = d;
+                }
+            }
+
+            var mesh = new Mesh { name = "Rocky Grass Terrain Mesh" };
+            mesh.vertices = vertices;
+            mesh.uv = uv;
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            meshFilter.sharedMesh = mesh;
+            meshCollider.sharedMesh = mesh;
 
             var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            material.color = new Color(0.14f, 0.13f, 0.12f);
-            floor.GetComponent<Renderer>().material = material;
+            material.color = Color.white;
+#if UNITY_EDITOR
+            var diffuse = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Environment/RockyTerrain/textures/rocky_terrain_02_diff_1k.jpg");
+            var normal = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Environment/RockyTerrain/textures/rocky_terrain_02_nor_gl_1k.exr");
+            if (diffuse != null) material.mainTexture = diffuse;
+            if (normal != null && material.HasProperty("_BumpMap"))
+            {
+                material.EnableKeyword("_NORMALMAP");
+                material.SetTexture("_BumpMap", normal);
+                material.SetFloat("_BumpScale", 0.35f);
+            }
+#endif
+            meshRenderer.sharedMaterial = material;
         }
 
         private static void CreateLight()
