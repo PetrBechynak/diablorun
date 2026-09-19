@@ -270,7 +270,7 @@ namespace DiabloLike.Core
 
         private bool IsMiniBossLevel()
         {
-            return !IsBossLevel() && dungeonLevel > 0 && dungeonLevel % 4 == 0;
+            return !IsBossLevel() && dungeonLevel > 8 && dungeonLevel % 2 == 0;
         }
 
         private void SpawnBoss(bool miniBoss)

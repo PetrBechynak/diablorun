@@ -64,7 +64,7 @@ namespace DiabloLike.World
             controller.height = 2.8f;
             controller.radius = 0.85f;
             controller.center = Vector3.up * 1.4f;
-            var healthMultiplier = miniBoss ? 0.25f : 1f;
+            var healthMultiplier = miniBoss ? 0.25f : 15f;
             boss.AddComponent<Health>().Configure(Mathf.RoundToInt((900 + level * 45) * 2 * healthMultiplier));
             boss.AddComponent<CombatFaction>().Configure(Faction.Enemy);
             boss.AddComponent<EnemyHealthBar>();

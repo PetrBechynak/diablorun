@@ -40,7 +40,7 @@ namespace DiabloLike.Core
             nextMeleeTime = Time.time + 1f;
             moveSpeed = 1.4f + level * 0.12f;
             damageBonus = Mathf.Max(0, level - 9) / 9 * 4;
-            strengthMultiplier = miniBoss ? 0.25f : 1f;
+            strengthMultiplier = miniBoss ? 0.25f : 15f;
         }
 
         private void Update()
