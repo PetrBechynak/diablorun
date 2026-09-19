@@ -1,4 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace DiabloLike.World
 {
@@ -6,37 +9,63 @@ namespace DiabloLike.World
     {
         public static (Transform modelRoot, Transform weapon) BuildPlayerModel(Transform root)
         {
+#if UNITY_EDITOR
+            var importedPlayer = LoadImportedPrefab("Assets/Synty/SidekickCharacters/Characters/Starter/Starter_01/Starter_01.prefab");
+            if (importedPlayer != null)
+            {
+                importedPlayer.name = "Imported Hero - Sidekick";
+                SetupImportedAnimator(importedPlayer);
+                importedPlayer.transform.SetParent(root, false);
+                importedPlayer.transform.localPosition = Vector3.zero;
+                importedPlayer.transform.localRotation = Quaternion.identity;
+                importedPlayer.transform.localScale = Vector3.one * 1.15f;
+                return (importedPlayer.transform, null);
+            }
+#endif
             var modelRoot = new GameObject("Model").transform;
             modelRoot.SetParent(root, false);
 
-            AddPart(modelRoot, "Coat", PrimitiveType.Capsule, new Vector3(0f, 1f, 0f), new Vector3(0.75f, 1.15f, 0.55f), new Color(0.08f, 0.18f, 0.28f));
-            AddPart(modelRoot, "Head", PrimitiveType.Sphere, new Vector3(0f, 1.9f, 0f), new Vector3(0.42f, 0.42f, 0.42f), new Color(0.72f, 0.55f, 0.42f));
-            AddPart(modelRoot, "Left Shoulder", PrimitiveType.Sphere, new Vector3(-0.48f, 1.35f, 0f), new Vector3(0.34f, 0.24f, 0.34f), new Color(0.1f, 0.35f, 0.65f));
-            AddPart(modelRoot, "Right Shoulder", PrimitiveType.Sphere, new Vector3(0.48f, 1.35f, 0f), new Vector3(0.34f, 0.24f, 0.34f), new Color(0.1f, 0.35f, 0.65f));
-            var blade = AddPart(modelRoot, "Blade", PrimitiveType.Cube, new Vector3(0.62f, 1.05f, 0.52f), new Vector3(0.1f, 0.1f, 1.45f), new Color(0.78f, 0.82f, 0.86f));
-            AddPart(modelRoot, "Hilt", PrimitiveType.Cube, new Vector3(0.62f, 0.85f, -0.12f), new Vector3(0.42f, 0.1f, 0.12f), new Color(0.48f, 0.29f, 0.12f));
-            return (modelRoot, blade.transform);
+            AddPart(modelRoot, "Cloak", PrimitiveType.Capsule, new Vector3(0f, 0.95f, 0f), new Vector3(0.78f, 1.08f, 0.58f), new Color(0.035f, 0.08f, 0.18f));
+            AddPart(modelRoot, "Cloak Trim", PrimitiveType.Cylinder, new Vector3(0f, 0.38f, 0f), new Vector3(0.52f, 0.08f, 0.52f), new Color(0.08f, 0.25f, 0.52f));
+            AddPart(modelRoot, "Hood", PrimitiveType.Sphere, new Vector3(0f, 1.85f, -0.04f), new Vector3(0.58f, 0.58f, 0.52f), new Color(0.025f, 0.045f, 0.1f));
+            AddPart(modelRoot, "Face", PrimitiveType.Sphere, new Vector3(0f, 1.78f, 0.27f), new Vector3(0.31f, 0.34f, 0.16f), new Color(0.48f, 0.3f, 0.2f));
+            AddPart(modelRoot, "Rune Eye L", PrimitiveType.Sphere, new Vector3(-0.12f, 1.84f, 0.39f), new Vector3(0.06f, 0.06f, 0.035f), new Color(0.2f, 0.8f, 1f));
+            AddPart(modelRoot, "Rune Eye R", PrimitiveType.Sphere, new Vector3(0.12f, 1.84f, 0.39f), new Vector3(0.06f, 0.06f, 0.035f), new Color(0.2f, 0.8f, 1f));
+            AddPart(modelRoot, "Shoulder L", PrimitiveType.Sphere, new Vector3(-0.48f, 1.28f, 0f), new Vector3(0.34f, 0.25f, 0.34f), new Color(0.08f, 0.28f, 0.62f));
+            AddPart(modelRoot, "Shoulder R", PrimitiveType.Sphere, new Vector3(0.48f, 1.28f, 0f), new Vector3(0.34f, 0.25f, 0.34f), new Color(0.08f, 0.28f, 0.62f));
+            var staff = AddPart(modelRoot, "Arcane Staff", PrimitiveType.Cylinder, new Vector3(0.67f, 1.1f, 0.28f), new Vector3(0.07f, 1.25f, 0.07f), new Color(0.32f, 0.16f, 0.07f), Quaternion.Euler(10f, 0f, -8f));
+            AddPart(modelRoot, "Staff Crystal", PrimitiveType.Sphere, new Vector3(0.55f, 2.32f, 0.18f), new Vector3(0.2f, 0.28f, 0.2f), new Color(0.15f, 0.65f, 1f));
+            return (modelRoot, staff.transform);
         }
 
         public static Transform BuildEnemyModel(Transform root)
         {
+#if UNITY_EDITOR
+            var importedEnemy = LoadImportedPrefab("Assets/Synty/SidekickCharacters/Characters/Starter/Starter_03/Starter_03.prefab");
+            if (importedEnemy != null)
+            {
+                importedEnemy.name = "Imported Enemy - Sidekick";
+                SetupImportedAnimator(importedEnemy);
+                importedEnemy.transform.SetParent(root, false);
+                importedEnemy.transform.localPosition = Vector3.zero;
+                importedEnemy.transform.localRotation = Quaternion.identity;
+                importedEnemy.transform.localScale = Vector3.one * 1.1f;
+                return importedEnemy.transform;
+            }
+#endif
             var modelRoot = new GameObject("Model").transform;
             modelRoot.SetParent(root, false);
 
-            AddPart(modelRoot, "Rib Cage", PrimitiveType.Capsule, new Vector3(0f, 1.02f, 0f), new Vector3(0.82f, 1.05f, 0.56f), new Color(0.34f, 0.035f, 0.03f));
-            AddPart(modelRoot, "Hunched Back", PrimitiveType.Sphere, new Vector3(0f, 1.24f, -0.22f), new Vector3(0.85f, 0.52f, 0.62f), new Color(0.2f, 0.025f, 0.025f));
-            AddPart(modelRoot, "Skull", PrimitiveType.Sphere, new Vector3(0f, 1.78f, 0.1f), new Vector3(0.42f, 0.34f, 0.36f), new Color(0.62f, 0.18f, 0.13f));
-            AddPart(modelRoot, "Jaw", PrimitiveType.Cube, new Vector3(0f, 1.58f, 0.24f), new Vector3(0.34f, 0.12f, 0.2f), new Color(0.16f, 0.015f, 0.012f));
-            AddPart(modelRoot, "Left Horn", PrimitiveType.Cube, new Vector3(-0.28f, 2.02f, 0.03f), new Vector3(0.1f, 0.42f, 0.1f), new Color(0.08f, 0.01f, 0.008f), Quaternion.Euler(0f, 0f, -24f));
-            AddPart(modelRoot, "Right Horn", PrimitiveType.Cube, new Vector3(0.28f, 2.02f, 0.03f), new Vector3(0.1f, 0.42f, 0.1f), new Color(0.08f, 0.01f, 0.008f), Quaternion.Euler(0f, 0f, 24f));
-            AddPart(modelRoot, "Left Arm", PrimitiveType.Cube, new Vector3(-0.68f, 1.08f, 0.08f), new Vector3(0.18f, 0.24f, 0.85f), new Color(0.48f, 0.045f, 0.035f), Quaternion.Euler(26f, -12f, 12f));
-            AddPart(modelRoot, "Right Arm", PrimitiveType.Cube, new Vector3(0.68f, 1.08f, 0.08f), new Vector3(0.18f, 0.24f, 0.85f), new Color(0.48f, 0.045f, 0.035f), Quaternion.Euler(26f, 12f, -12f));
-            AddPart(modelRoot, "Left Claw", PrimitiveType.Cube, new Vector3(-0.82f, 0.72f, 0.5f), new Vector3(0.14f, 0.12f, 0.48f), new Color(0.8f, 0.08f, 0.045f), Quaternion.Euler(42f, 0f, 8f));
-            AddPart(modelRoot, "Right Claw", PrimitiveType.Cube, new Vector3(0.82f, 0.72f, 0.5f), new Vector3(0.14f, 0.12f, 0.48f), new Color(0.8f, 0.08f, 0.045f), Quaternion.Euler(42f, 0f, -8f));
-            AddPart(modelRoot, "Left Leg", PrimitiveType.Cube, new Vector3(-0.24f, 0.34f, -0.05f), new Vector3(0.22f, 0.72f, 0.22f), new Color(0.25f, 0.025f, 0.022f), Quaternion.Euler(-8f, 0f, 5f));
-            AddPart(modelRoot, "Right Leg", PrimitiveType.Cube, new Vector3(0.24f, 0.34f, -0.05f), new Vector3(0.22f, 0.72f, 0.22f), new Color(0.25f, 0.025f, 0.022f), Quaternion.Euler(-8f, 0f, -5f));
-            AddPart(modelRoot, "Chest Ember", PrimitiveType.Sphere, new Vector3(0f, 1.1f, 0.34f), new Vector3(0.28f, 0.2f, 0.08f), new Color(1f, 0.07f, 0.02f));
-            AddPart(modelRoot, "Back Spike", PrimitiveType.Cube, new Vector3(0f, 1.32f, -0.54f), new Vector3(0.2f, 0.2f, 0.9f), new Color(0.12f, 0.012f, 0.012f), Quaternion.Euler(35f, 0f, 0f));
+            AddPart(modelRoot, "Demon Body", PrimitiveType.Capsule, new Vector3(0f, 0.98f, 0f), new Vector3(0.8f, 1.08f, 0.58f), new Color(0.22f, 0.025f, 0.035f));
+            AddPart(modelRoot, "Shoulder Mantle", PrimitiveType.Sphere, new Vector3(0f, 1.4f, -0.08f), new Vector3(0.92f, 0.35f, 0.62f), new Color(0.09f, 0.012f, 0.02f));
+            AddPart(modelRoot, "Demon Head", PrimitiveType.Sphere, new Vector3(0f, 1.78f, 0.08f), new Vector3(0.45f, 0.42f, 0.4f), new Color(0.45f, 0.06f, 0.045f));
+            AddPart(modelRoot, "Eye L", PrimitiveType.Sphere, new Vector3(-0.16f, 1.82f, 0.39f), new Vector3(0.07f, 0.06f, 0.035f), new Color(1f, 0.55f, 0.05f));
+            AddPart(modelRoot, "Eye R", PrimitiveType.Sphere, new Vector3(0.16f, 1.82f, 0.39f), new Vector3(0.07f, 0.06f, 0.035f), new Color(1f, 0.55f, 0.05f));
+            AddPart(modelRoot, "Horn L", PrimitiveType.Cylinder, new Vector3(-0.28f, 2.18f, 0.02f), new Vector3(0.16f, 0.55f, 0.16f), new Color(0.12f, 0.012f, 0.01f), Quaternion.Euler(0f, 0f, -18f));
+            AddPart(modelRoot, "Horn R", PrimitiveType.Cylinder, new Vector3(0.28f, 2.18f, 0.02f), new Vector3(0.16f, 0.55f, 0.16f), new Color(0.12f, 0.012f, 0.01f), Quaternion.Euler(0f, 0f, 18f));
+            AddPart(modelRoot, "Claw L", PrimitiveType.Capsule, new Vector3(-0.68f, 0.95f, 0.22f), new Vector3(0.2f, 0.62f, 0.2f), new Color(0.36f, 0.035f, 0.04f), Quaternion.Euler(20f, 0f, 22f));
+            AddPart(modelRoot, "Claw R", PrimitiveType.Capsule, new Vector3(0.68f, 0.95f, 0.22f), new Vector3(0.2f, 0.62f, 0.2f), new Color(0.36f, 0.035f, 0.04f), Quaternion.Euler(20f, 0f, -22f));
+            AddPart(modelRoot, "Chest Core", PrimitiveType.Sphere, new Vector3(0f, 1.12f, 0.38f), new Vector3(0.22f, 0.24f, 0.08f), new Color(1f, 0.12f, 0.015f));
             return modelRoot;
         }
 
@@ -68,5 +97,31 @@ namespace DiabloLike.World
             material.color = color;
             return material;
         }
+
+#if UNITY_EDITOR
+        private static GameObject LoadImportedPrefab(string path)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            return prefab == null ? null : Object.Instantiate(prefab);
+        }
+
+        private static void SetupImportedAnimator(GameObject actor)
+        {
+            var animator = actor.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                return;
+            }
+
+            var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                "Assets/Synty/SidekickCharacters/Animations/New Animator Controller.controller");
+            if (controller != null)
+            {
+                animator.runtimeAnimatorController = controller;
+                animator.applyRootMotion = false;
+                animator.enabled = true;
+            }
+        }
+#endif
     }
 }

@@ -74,6 +74,7 @@ namespace DiabloLike.Core
             var activeAttackRange = ranged ? rangedAttackRange : attackRange;
             var moveDirection = ChooseMoveDirection(toPlayer, toAiTarget, activeAttackRange);
             controller.SimpleMove(moveDirection * speed);
+            actorAnimator?.SetMoving(moveDirection.sqrMagnitude > 0.01f);
 
             if (Time.time >= nextSearchBarkTime && toPlayer.magnitude > attackRange * 1.5f)
             {
@@ -161,19 +162,23 @@ namespace DiabloLike.Core
             }
 
             TryBark(EnemyBarkEvent.Damaged, 0.55f);
+            actorAnimator?.PlayHit();
             DiabloAudio.Play(GameSfx.EnemyHurt, 0.08f);
         }
 
         private void OnDied(Health deadHealth)
         {
+            // Keep the enemy object alive while its corpse is visible. This is
+            // repeated here as a safeguard for damage arriving during setup.
+            deadHealth.DestroyOnDeath = false;
             TryBark(EnemyBarkEvent.Dying, 0.75f, true);
+            actorAnimator?.PlayDeath();
             DiabloAudio.Play(GameSfx.EnemyDeath, 0.06f);
             EffectFactory.SpawnEnemyDeath(transform.position);
-            foreach (var renderer in GetComponentsInChildren<Renderer>())
+            foreach (var renderer in GetComponentsInChildren<Renderer>(true))
             {
-                renderer.enabled = false;
+                renderer.enabled = true;
             }
-
             foreach (var collider in GetComponentsInChildren<Collider>())
             {
                 collider.enabled = false;
@@ -184,7 +189,8 @@ namespace DiabloLike.Core
                 controller.enabled = false;
             }
 
-            Destroy(gameObject, 2.8f);
+            // Keep the corpse visible long enough for the full death animation.
+            Destroy(gameObject, 6f);
         }
 
         private void TryBark(EnemyBarkEvent barkEvent, float chance, bool ignoreCooldown = false)
