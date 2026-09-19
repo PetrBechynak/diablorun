@@ -140,7 +140,7 @@ namespace DiabloLike.UI
             {
                 var row = new Rect(8f, 34f + i * 30f, contentRect.width - 16f, 26f);
                 var option = upgrades[i];
-                DrawRect(row, option.IsRare ? new Color(0.22f, 0.07f, 0.2f, 1f) : new Color(0.12f, 0.075f, 0.04f, 1f));
+                DrawRect(row, option.IsSuperRare ? new Color(0.95f, 0.58f, 0.03f, 1f) : option.IsRare ? new Color(0.22f, 0.07f, 0.2f, 1f) : new Color(0.12f, 0.075f, 0.04f, 1f));
                 GUI.color = option.TitleColor;
                 GUI.Label(new Rect(row.x + 8f, row.y + 4f, row.width - 82f, 20f), $"{i + 1}. {option.Title}");
 
@@ -287,11 +287,11 @@ namespace DiabloLike.UI
 
         private void DrawRewardButton(Rect rect, ChestRewardOption option, int rewardIndex)
         {
-            DrawRect(rect, option.IsRare ? new Color(0.16f, 0.04f, 0.18f, 1f) : new Color(0.11f, 0.07f, 0.045f, 1f));
+            DrawRect(rect, option.IsSuperRare ? new Color(1f, 0.67f, 0.04f, 1f) : option.IsRare ? new Color(0.16f, 0.04f, 0.18f, 1f) : new Color(0.11f, 0.07f, 0.045f, 1f));
             DrawRect(new Rect(rect.x + 5f, rect.y + 5f, rect.width - 10f, rect.height - 10f), new Color(0.16f, 0.1f, 0.065f, 1f));
             GUI.color = option.TitleColor;
             GUI.Label(new Rect(rect.x + 14f, rect.y + 14f, rect.width - 28f, 24f), option.Title);
-            GUI.color = option.IsRare ? new Color(1f, 0.65f, 1f, 1f) : Color.white;
+            GUI.color = option.IsSuperRare ? new Color(1f, 0.9f, 0.32f, 1f) : option.IsRare ? new Color(1f, 0.65f, 1f, 1f) : Color.white;
             GUI.Label(new Rect(rect.x + 14f, rect.y + 44f, rect.width - 28f, 52f), option.Body);
 
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none))

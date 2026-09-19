@@ -82,7 +82,7 @@ namespace DiabloLike.Core
             toPlayer.y = 0f;
             if (toPlayer.magnitude <= 11f && Vector3.Angle(direction, toPlayer.normalized) <= 8f)
             {
-                targetHealth.TakeDamage(18 + damageBonus);
+                targetHealth.TakeDamage((18 + damageBonus) * 2);
                 EffectFactory.SpawnHit(target.position);
             }
         }
@@ -96,7 +96,7 @@ namespace DiabloLike.Core
             if (distance <= 2.4f && Time.time >= nextMeleeTime)
             {
                 nextMeleeTime = Time.time + 0.85f;
-                targetHealth.TakeDamage(30 + damageBonus);
+                targetHealth.TakeDamage((30 + damageBonus) * 2);
                 EffectFactory.SpawnHit(target.position);
             }
 
@@ -122,7 +122,7 @@ namespace DiabloLike.Core
             var body = projectile.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            projectile.AddComponent<EnemyProjectile>().Configure(direction, 22 + damageBonus, 9f + moveSpeed, 12f);
+            projectile.AddComponent<EnemyProjectile>().Configure(direction, (22 + damageBonus) * 2, 9f + moveSpeed, 12f);
         }
 
         private void UpdateDash()
@@ -133,7 +133,7 @@ namespace DiabloLike.Core
                 controller.Move(dashDirection * (13f * Time.deltaTime));
                 if (Vector3.Distance(transform.position, target.position) < 1.2f)
                 {
-                    targetHealth.TakeDamage(18);
+                    targetHealth.TakeDamage(36);
                     EffectFactory.SpawnHit(target.position);
                 }
 

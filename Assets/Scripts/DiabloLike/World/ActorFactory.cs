@@ -64,7 +64,7 @@ namespace DiabloLike.World
             controller.height = 2.8f;
             controller.radius = 0.85f;
             controller.center = Vector3.up * 1.4f;
-            boss.AddComponent<Health>().Configure(900 + level * 45);
+            boss.AddComponent<Health>().Configure((900 + level * 45) * 2);
             boss.AddComponent<CombatFaction>().Configure(Faction.Enemy);
             boss.AddComponent<EnemyHealthBar>();
             var modelRoot = ModelFactory.BuildEnemyModel(boss.transform, false);
