@@ -726,6 +726,7 @@ namespace DiabloLike.Core
                 || objectName.StartsWith("Enemy Projectile")
                 || objectName.StartsWith("Boss Projectile")
                 || objectName.StartsWith("Ashen Arena Floor")
+                || objectName.StartsWith("Arena Decoration")
                 || objectName.StartsWith("Blood Moon Key Light")
                 || objectName.StartsWith("Rune Stone")
                 || objectName.StartsWith("Broken Obelisk")
