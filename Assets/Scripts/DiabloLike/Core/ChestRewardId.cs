@@ -15,6 +15,7 @@ namespace DiabloLike.Core
         RareArmor,
         RareSwordBleed,
         RareWandBigBullet,
-        RareSwiftCast
+        RareSwiftCast,
+        RareExplosion
     }
 }

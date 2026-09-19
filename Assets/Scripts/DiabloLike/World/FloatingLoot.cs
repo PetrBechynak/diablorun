@@ -4,6 +4,7 @@ namespace DiabloLike.World
 {
     public sealed class FloatingLoot : MonoBehaviour
     {
+        [SerializeField] private int healAmount = 12;
         private Vector3 basePosition;
         private float phase;
 
@@ -18,6 +19,17 @@ namespace DiabloLike.World
         {
             transform.position = basePosition + Vector3.up * Mathf.Sin(Time.time * 3f + phase) * 0.12f;
             transform.Rotate(0f, 120f * Time.deltaTime, 0f, Space.World);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!other.TryGetComponent(out DiabloLike.Combat.Health health) || !other.CompareTag("Player"))
+            {
+                return;
+            }
+
+            health.Heal(healAmount);
+            Destroy(gameObject);
         }
     }
 }

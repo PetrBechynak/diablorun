@@ -33,6 +33,7 @@ namespace DiabloLike.Core
         private int swordDamageBonus;
         private float swordRangeBonus;
         private bool splitShotUnlocked;
+        private bool explosionUnlocked;
         private int armorBonus;
         private bool rareArmorUnlocked;
         private float projectileSizeBonus;
@@ -101,6 +102,10 @@ namespace DiabloLike.Core
             if (splitShotUnlocked)
             {
                 playerController.EnableSplitWandProjectiles();
+            }
+            if (explosionUnlocked)
+            {
+                playerController.EnableExplodingWandProjectiles();
             }
             cachedPlayerMaxHealth = playerHealth.Max;
             cachedPlayerMaxMana = playerMana.Max;
@@ -173,7 +178,7 @@ namespace DiabloLike.Core
                 return;
             }
 
-            StartCoroutine(RestartRunRoutine());
+            StartCoroutine(RestartRunRoutine(true));
         }
 
         public void EquipWeapon(WeaponId weaponId)
@@ -345,6 +350,11 @@ namespace DiabloLike.Core
                     playerController?.EnableSplitWandProjectiles();
                     ChatText = "Rare upgrade: wand projektily se po zasahu deli.";
                     break;
+                case ChestRewardId.RareExplosion:
+                    explosionUnlocked = true;
+                    playerController?.EnableExplodingWandProjectiles();
+                    ChatText = "Rare upgrade: wand projektily po zasahu vybuchuji.";
+                    break;
                 case ChestRewardId.Armor:
                     armorBonus += 1;
                     playerHealth?.IncreaseArmor(1);
@@ -391,7 +401,7 @@ namespace DiabloLike.Core
             dungeonLevel++;
             carriedHealth = playerHealth != null ? Mathf.Max(1, playerHealth.Current) : -1;
             DiabloAudio.Play(GameSfx.Teleport, 0.04f);
-            StartCoroutine(RestartRunRoutine());
+            StartCoroutine(RestartRunRoutine(false));
         }
 
         private void AddEvent(string text)
@@ -419,14 +429,41 @@ namespace DiabloLike.Core
             }
         }
 
-        private IEnumerator RestartRunRoutine()
+        private IEnumerator RestartRunRoutine(bool resetProgress)
         {
             restarting = true;
             Time.timeScale = 1f;
+            if (resetProgress)
+            {
+                ResetRunProgress();
+            }
             CleanupRunObjects();
             yield return null;
             BeginRun();
             restarting = false;
+        }
+
+        private void ResetRunProgress()
+        {
+            dungeonLevel = 1;
+            lifeBonus = 0;
+            manaBonus = 0;
+            movementSpeedBonus = 0f;
+            wandDamageBonus = 0;
+            wandRangeBonus = 0f;
+            swordDamageBonus = 0;
+            swordRangeBonus = 0f;
+            splitShotUnlocked = false;
+            explosionUnlocked = false;
+            armorBonus = 0;
+            rareArmorUnlocked = false;
+            projectileSizeBonus = 0f;
+            cooldownMultiplier = 1f;
+            carriedHealth = -1;
+            cachedPlayerMaxHealth = 0;
+            cachedPlayerMaxMana = 0;
+            HasWandUpgrade = false;
+            EquippedWeapon = WeaponCatalog.Sword;
         }
 
         private void CreateSummoningPillars()
@@ -481,29 +518,36 @@ namespace DiabloLike.Core
                 pool.Add(new ChestRewardOption(ChestRewardId.WandUpgrade, "Ember Wand", "upgrade wand\nprojectile hits harder"));
             }
 
-            if (HasWandUpgrade && !splitShotUnlocked && Random.value < 0.28f)
+            var rareRound = dungeonLevel % 2 == 0;
+
+            if (HasWandUpgrade && !splitShotUnlocked && (rareRound || Random.value < 0.28f))
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.SplitShot, "Split Hex", "RARE\nwand bullets split on hit", true));
             }
 
-            if (!rareArmorUnlocked && Random.value < 0.22f)
+            if (!rareArmorUnlocked && (rareRound || Random.value < 0.22f))
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.RareArmor, "Graveplate", "RARE\n+3 armor", true));
             }
 
-            if (Random.value < 0.2f)
+            if (rareRound || Random.value < 0.2f)
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.RareSwordBleed, "Butcher Edge", "RARE\n+10 sword damage\n+0.15 reach", true));
             }
 
-            if (HasWandUpgrade && Random.value < 0.24f)
+            if (HasWandUpgrade && (rareRound || Random.value < 0.24f))
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.RareWandBigBullet, "Fat Spark", "RARE\nbigger wand bullets\n+4 damage", true));
             }
 
-            if (Random.value < 0.18f)
+            if (rareRound || Random.value < 0.18f)
             {
                 pool.Add(new ChestRewardOption(ChestRewardId.RareSwiftCast, "Nervous Hands", "RARE\n10% faster attacks", true));
+            }
+
+            if (rareRound)
+            {
+                pool.Add(new ChestRewardOption(ChestRewardId.RareExplosion, "Blast Core", "RARE\nwand projectiles explode on hit", true));
             }
 
             while (currentRewardOptions.Count < 3 && pool.Count > 0)
@@ -511,6 +555,15 @@ namespace DiabloLike.Core
                 var index = Random.Range(0, pool.Count);
                 currentRewardOptions.Add(pool[index]);
                 pool.RemoveAt(index);
+            }
+
+            if (rareRound && !currentRewardOptions.Exists(option => option.IsRare))
+            {
+                var rareOptions = pool.FindAll(option => option.IsRare);
+                if (rareOptions.Count > 0)
+                {
+                    currentRewardOptions[0] = rareOptions[Random.Range(0, rareOptions.Count)];
+                }
             }
         }
 

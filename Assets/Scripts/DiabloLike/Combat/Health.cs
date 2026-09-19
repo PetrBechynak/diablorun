@@ -40,6 +40,16 @@ namespace DiabloLike.Combat
             currentHealth = Mathf.Clamp(value, 1, maxHealth);
         }
 
+        public void Heal(int amount)
+        {
+            if (IsDead)
+            {
+                return;
+            }
+
+            currentHealth = Mathf.Min(maxHealth, currentHealth + Mathf.Max(0, amount));
+        }
+
         public void TakeDamage(int amount)
         {
             if (IsDead)

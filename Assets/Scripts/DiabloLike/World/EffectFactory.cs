@@ -51,6 +51,15 @@ namespace DiabloLike.World
             essence.GetComponent<Renderer>().material = CreateMaterial(new Color(1f, 0.08f, 0.12f));
             Object.Destroy(essence.GetComponent<Collider>());
             essence.AddComponent<FloatingLoot>();
+            var collider = essence.AddComponent<SphereCollider>();
+            collider.isTrigger = true;
+            collider.radius = 1.5f;
+        }
+
+        public static void SpawnExplosion(Vector3 position)
+        {
+            SpawnBurst(position + Vector3.up * 0.35f, new Color(1f, 0.35f, 0.03f), 24, 1.1f);
+            SpawnRing(position + Vector3.up * 0.05f, new Color(1f, 0.2f, 0.02f), 1.35f);
         }
 
         private static void SpawnBurst(Vector3 origin, Color color, int count, float radius)

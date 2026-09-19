@@ -12,6 +12,7 @@ namespace DiabloLike.World
         {
             var player = new GameObject("Player - Rune Hunter");
             player.name = "Player - Rune Hunter";
+            player.tag = "Player";
             player.transform.position = Vector3.zero;
 
             var controller = player.AddComponent<CharacterController>();
@@ -30,8 +31,8 @@ namespace DiabloLike.World
 
         public static GameObject CreateEnemy(Vector3 position, Transform player, GameDirector director, bool ranged = false)
         {
-            var enemy = new GameObject("Possessed");
-            enemy.name = ranged ? "Possessed Hexer" : "Possessed";
+            var enemy = new GameObject("Vlkodlak");
+            enemy.name = ranged ? "Vlkodlak Hexer" : "Vlkodlak";
             enemy.transform.position = position;
 
             var controller = enemy.AddComponent<CharacterController>();
@@ -48,7 +49,7 @@ namespace DiabloLike.World
             {
                 enemyController.ConfigureRanged();
             }
-            var modelRoot = ModelFactory.BuildEnemyModel(enemy.transform);
+            var modelRoot = ModelFactory.BuildEnemyModel(enemy.transform, ranged);
             enemy.AddComponent<ProceduralActorAnimator>().Configure(modelRoot, null);
             EffectFactory.SpawnEnemyArrival(position);
             DiabloAudio.Play(GameSfx.EnemySpawn, 0.08f);

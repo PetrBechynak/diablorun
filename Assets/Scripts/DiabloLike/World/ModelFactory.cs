@@ -38,10 +38,13 @@ namespace DiabloLike.World
             return (modelRoot, staff.transform);
         }
 
-        public static Transform BuildEnemyModel(Transform root)
+        public static Transform BuildEnemyModel(Transform root, bool ranged = false)
         {
 #if UNITY_EDITOR
-            var importedEnemy = LoadImportedPrefab("Assets/Synty/SidekickCharacters/Characters/Starter/Starter_03/Starter_03.prefab");
+            var enemyPrefab = ranged
+                ? "Assets/Synty/SidekickCharacters/Characters/Starter/Starter_03/Starter_03.prefab"
+                : "Assets/Synty/SidekickCharacters/Characters/Starter/Starter_02/Starter_02.prefab";
+            var importedEnemy = LoadImportedPrefab(enemyPrefab);
             if (importedEnemy != null)
             {
                 importedEnemy.name = "Imported Enemy - Sidekick";

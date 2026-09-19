@@ -11,11 +11,12 @@ namespace DiabloLike.Core
         private float speed;
         private float maxDistance;
         private bool splitsOnHit;
+        private bool explodesOnHit;
         private bool isSplitChild;
         private Vector3 startPosition;
         private Vector3 direction;
 
-        public void Configure(Vector3 moveDirection, int projectileDamage, float projectileSpeed, float range, bool canSplit = false, bool splitChild = false)
+        public void Configure(Vector3 moveDirection, int projectileDamage, float projectileSpeed, float range, bool canSplit = false, bool splitChild = false, bool canExplode = false)
         {
             direction = moveDirection.normalized;
             damage = projectileDamage;
@@ -23,6 +24,7 @@ namespace DiabloLike.Core
             maxDistance = range;
             splitsOnHit = canSplit;
             isSplitChild = splitChild;
+            explodesOnHit = canExplode;
             startPosition = transform.position;
         }
 
@@ -55,7 +57,27 @@ namespace DiabloLike.Core
                 SpawnSplitProjectile(Quaternion.Euler(0f, 24f, 0f) * direction);
             }
 
+            if (explodesOnHit)
+            {
+                Explode();
+            }
+
             Destroy(gameObject);
+        }
+
+        private void Explode()
+        {
+            const float radius = 1.8f;
+            EffectFactory.SpawnExplosion(transform.position);
+            foreach (var hit in Physics.OverlapSphere(transform.position, radius))
+            {
+                if (hit.TryGetComponent(out CombatFaction faction)
+                    && (faction.Faction == Faction.Enemy || faction.Faction == Faction.Summoner)
+                    && hit.TryGetComponent(out Health health))
+                {
+                    health.TakeDamage(Mathf.Max(1, Mathf.RoundToInt(damage * 0.65f)));
+                }
+            }
         }
 
         private void SpawnSplitProjectile(Vector3 splitDirection)

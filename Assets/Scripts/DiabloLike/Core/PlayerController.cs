@@ -1,3 +1,4 @@
+using System.Collections;
 using DiabloLike.Audio;
 using DiabloLike.Combat;
 using DiabloLike.World;
@@ -24,6 +25,7 @@ namespace DiabloLike.Core
         private int swordDamageBonus;
         private float swordRangeBonus;
         private bool splitWandProjectiles;
+        private bool explodingWandProjectiles;
         private float projectileSizeBonus;
         private float cooldownMultiplier = 1f;
         private float nextAttackTime;
@@ -73,6 +75,11 @@ namespace DiabloLike.Core
             splitWandProjectiles = true;
         }
 
+        public void EnableExplodingWandProjectiles()
+        {
+            explodingWandProjectiles = true;
+        }
+
         public void AddProjectileSize(float amount)
         {
             projectileSizeBonus += Mathf.Max(0f, amount);
@@ -97,11 +104,11 @@ namespace DiabloLike.Core
             }
 
             Move();
-            FaceMouse();
             UpdateReachLine();
 
             if (Mouse.current != null && Mouse.current.leftButton.isPressed && Time.time >= nextAttackTime)
             {
+                FaceMouseForAttack();
                 Attack();
             }
         }
@@ -135,17 +142,17 @@ namespace DiabloLike.Core
 
             var input = new Vector3(input2D.x, 0f, input2D.y);
             input = Vector3.ClampMagnitude(input, 1f);
+            if (input.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.LookRotation(input);
+            }
+
             controller.SimpleMove(input * (moveSpeed + movementSpeedBonus));
         }
 
-        private void FaceMouse()
+        private void FaceMouseForAttack()
         {
-            if (mainCamera == null)
-            {
-                return;
-            }
-
-            if (Mouse.current == null)
+            if (mainCamera == null || Mouse.current == null)
             {
                 return;
             }
@@ -157,8 +164,7 @@ namespace DiabloLike.Core
                 return;
             }
 
-            var target = ray.GetPoint(distance);
-            var direction = target - transform.position;
+            var direction = ray.GetPoint(distance) - transform.position;
             direction.y = 0f;
             if (direction.sqrMagnitude > 0.001f)
             {
@@ -197,6 +203,10 @@ namespace DiabloLike.Core
                 {
                     health.TakeDamage(CurrentWeaponDamage());
                     EffectFactory.SpawnHit(hit.transform.position);
+                    if (health.IsDead && hit.name.StartsWith("Vlkodlak") && Vector3.Distance(transform.position, hit.transform.position) <= 2.4f)
+                    {
+                        StartCoroutine(SinkEnemy(hit.transform));
+                    }
                     hitSomething = true;
                 }
             }
@@ -210,6 +220,24 @@ namespace DiabloLike.Core
         private static bool CanHit(Faction faction)
         {
             return faction == Faction.Enemy || faction == Faction.Summoner;
+        }
+
+        private IEnumerator SinkEnemy(Transform enemy)
+        {
+            var start = enemy.position;
+            var end = start + Vector3.down * 1.8f;
+            var elapsed = 0f;
+            while (enemy != null && elapsed < 0.45f)
+            {
+                elapsed += Time.deltaTime;
+                enemy.position = Vector3.Lerp(start, end, elapsed / 0.45f);
+                yield return null;
+            }
+
+            if (enemy != null)
+            {
+                Destroy(enemy.gameObject);
+            }
         }
 
         private float AttackCenterDistance()
@@ -259,7 +287,7 @@ namespace DiabloLike.Core
             var body = projectile.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            projectile.AddComponent<WandProjectile>().Configure(transform.forward, CurrentWeaponDamage(), 10.5f, CurrentWeaponRange(), splitWandProjectiles);
+            projectile.AddComponent<WandProjectile>().Configure(transform.forward, CurrentWeaponDamage(), 10.5f, CurrentWeaponRange(), splitWandProjectiles, false, explodingWandProjectiles);
         }
 
         private int CurrentWeaponDamage()
