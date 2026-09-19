@@ -104,12 +104,21 @@ namespace DiabloLike.World
             for (var i = 0; i < 20; i++)
             {
                 var angle = i * Mathf.PI * 2f / 20f;
+                var position = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 5f;
+#if UNITY_EDITOR
+                var pillarAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/Low Poly Trim Sheet Asset Collection/TrimSheet_Prefabs/PillarDeco.prefab");
+                var rune = pillarAsset != null ? Object.Instantiate(pillarAsset) : GameObject.CreatePrimitive(PrimitiveType.Cube);
+                var importedPillar = pillarAsset != null;
+#else
                 var rune = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                rune.name = "Rune Stone";
-                rune.transform.position = new Vector3(Mathf.Cos(angle), 0.05f, Mathf.Sin(angle)) * 5f;
+                var importedPillar = false;
+#endif
+                rune.name = "Rune Pillar";
+                rune.transform.position = position;
                 rune.transform.rotation = Quaternion.Euler(0f, -angle * Mathf.Rad2Deg, 0f);
-                rune.transform.localScale = new Vector3(0.22f, 0.1f, 0.75f);
-                rune.GetComponent<Renderer>().material = material;
+                rune.transform.localScale = importedPillar ? Vector3.one * 0.7f : new Vector3(0.22f, 0.1f, 0.75f);
+                if (!importedPillar) rune.GetComponent<Renderer>().material = material;
             }
         }
 
@@ -125,13 +134,17 @@ namespace DiabloLike.World
                 var angle = i * Mathf.PI * 2f / 16f;
                 var radius = i % 2 == 0 ? 10.8f : 9.8f;
                 var position = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                var rock = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                var rock = CreateRockAsset(i);
                 rock.name = "Arena Decoration - Ruined Rock";
+                NormalizeImportedMaterials(rock);
                 rock.transform.position = position + Vector3.up * Random.Range(0.2f, 0.55f);
                 rock.transform.rotation = Random.rotation;
                 rock.transform.localScale = Vector3.one * Random.Range(0.35f, 0.8f);
-                rock.GetComponent<Renderer>().material = stoneMaterial;
-                Object.Destroy(rock.GetComponent<Collider>());
+                if (rock.GetComponentInChildren<Renderer>() == null)
+                {
+                    rock.GetComponent<Renderer>().material = stoneMaterial;
+                }
+                foreach (var collider in rock.GetComponentsInChildren<Collider>()) Object.Destroy(collider);
             }
 
             for (var i = 0; i < 8; i++)
@@ -212,6 +225,21 @@ namespace DiabloLike.World
 
         private static void CreatePillar(Vector3 position, float angle, Material metalMaterial, Material crystalMaterial, Material emberMaterial)
         {
+#if UNITY_EDITOR
+            var pillarAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Low Poly Trim Sheet Asset Collection/TrimSheet_Prefabs/Pillar.prefab");
+            if (pillarAsset != null)
+            {
+                var imported = Object.Instantiate(pillarAsset);
+                imported.name = "Arena Decoration - Stone Pillar";
+                imported.transform.position = position;
+                imported.transform.rotation = Quaternion.Euler(0f, -angle * Mathf.Rad2Deg, 0f);
+                imported.transform.localScale = Vector3.one * 0.85f;
+                NormalizeImportedMaterials(imported);
+                foreach (var collider in imported.GetComponentsInChildren<Collider>()) Object.Destroy(collider);
+                return;
+            }
+#endif
             var baseStone = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             baseStone.name = "Arena Decoration - Pillar";
             baseStone.transform.position = position + Vector3.up * 0.75f;
@@ -225,6 +253,39 @@ namespace DiabloLike.World
             crystal.transform.localScale = Vector3.one * 0.42f;
             crystal.GetComponent<Renderer>().material = angle % 2f > 1f ? crystalMaterial : emberMaterial;
             Object.Destroy(crystal.GetComponent<Collider>());
+        }
+
+        private static GameObject CreateRockAsset(int index)
+        {
+#if UNITY_EDITOR
+            var names = new[] { "Rock1A", "Rock1B", "Rock2", "Rock3", "Rock4A", "Rock5A", "Rock6A" };
+            var path = $"Assets/Rocks and Boulders 2/Rocks/Prefabs/{names[index % names.Length]}.prefab";
+            var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (asset != null) return Object.Instantiate(asset);
+#endif
+            return GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        }
+
+        private static void NormalizeImportedMaterials(GameObject root)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) return;
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                var materials = renderer.materials;
+                for (var i = 0; i < materials.Length; i++)
+                {
+                    var source = materials[i];
+                    var normalized = new Material(shader) { name = $"{source?.name ?? "Environment"} - URP" };
+                    if (source != null)
+                    {
+                        if (source.HasProperty("_MainTex")) normalized.mainTexture = source.mainTexture;
+                        if (source.HasProperty("_Color")) normalized.color = source.color;
+                    }
+                    materials[i] = normalized;
+                }
+                renderer.materials = materials;
+            }
         }
 
         private static Material CreateMaterial(Color color)

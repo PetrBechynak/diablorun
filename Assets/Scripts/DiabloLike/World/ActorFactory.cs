@@ -78,7 +78,7 @@ namespace DiabloLike.World
 
         public static GameObject CreateSummoningPillar(Vector3 position, float height, GameDirector director)
         {
-            var pillar = ModelFactory.BuildObelisk(position, height);
+            var pillar = CreateAssetPillar(position, height);
             pillar.name = "Summoning Pillar";
             var collider = pillar.AddComponent<BoxCollider>();
             collider.center = new Vector3(0f, height * 0.5f, 0f);
@@ -88,6 +88,46 @@ namespace DiabloLike.World
             pillar.AddComponent<EnemyHealthBar>();
             pillar.AddComponent<SummoningPillar>().Configure(director);
             return pillar;
+        }
+
+        private static GameObject CreateAssetPillar(Vector3 position, float height)
+        {
+#if UNITY_EDITOR
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Low Poly Trim Sheet Asset Collection/TrimSheet_Prefabs/Pillar.prefab");
+            if (prefab != null)
+            {
+                var imported = Object.Instantiate(prefab);
+                imported.name = "Destructible Stone Pillar";
+                imported.transform.position = position;
+                imported.transform.localScale = new Vector3(1.2f, Mathf.Max(0.8f, height / 2.5f), 1.2f);
+                NormalizeImportedMaterials(imported);
+                return imported;
+            }
+#endif
+            return ModelFactory.BuildObelisk(position, height);
+        }
+
+        private static void NormalizeImportedMaterials(GameObject root)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) return;
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                var materials = renderer.materials;
+                for (var i = 0; i < materials.Length; i++)
+                {
+                    var source = materials[i];
+                    var normalized = new Material(shader) { name = $"{source?.name ?? "Pillar"} - URP" };
+                    if (source != null)
+                    {
+                        if (source.HasProperty("_MainTex")) normalized.mainTexture = source.mainTexture;
+                        if (source.HasProperty("_Color")) normalized.color = source.color;
+                    }
+                    materials[i] = normalized;
+                }
+                renderer.materials = materials;
+            }
         }
 
         public static GameObject CreateUpgradeChest(Vector3 position, GameDirector director)
