@@ -61,6 +61,11 @@ namespace DiabloLike.Core
             attackCooldown = 1.35f;
         }
 
+        public void SetSpeedBonus(float amount)
+        {
+            speed += Mathf.Max(0f, amount);
+        }
+
         private void Update()
         {
             if (target == null || targetHealth == null || targetHealth.IsDead)

@@ -56,6 +56,25 @@ namespace DiabloLike.World
             return enemy;
         }
 
+        public static GameObject CreateBoss(Vector3 position, Transform player, int level)
+        {
+            var boss = new GameObject("Boss - Rotmaw");
+            boss.transform.position = position;
+            var controller = boss.AddComponent<CharacterController>();
+            controller.height = 2.8f;
+            controller.radius = 0.85f;
+            controller.center = Vector3.up * 1.4f;
+            boss.AddComponent<Health>().Configure(900 + level * 45);
+            boss.AddComponent<CombatFaction>().Configure(Faction.Enemy);
+            boss.AddComponent<EnemyHealthBar>();
+            var modelRoot = ModelFactory.BuildEnemyModel(boss.transform, false);
+            modelRoot.localScale = Vector3.one * 1.8f;
+            boss.AddComponent<BossController>().Configure(player, level);
+            EffectFactory.SpawnEnemyArrival(position);
+            DiabloAudio.Play(GameSfx.EnemySpawn, 0.12f);
+            return boss;
+        }
+
         public static GameObject CreateSummoningPillar(Vector3 position, float height, GameDirector director)
         {
             var pillar = ModelFactory.BuildObelisk(position, height);

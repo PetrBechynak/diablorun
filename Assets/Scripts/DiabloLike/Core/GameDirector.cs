@@ -81,7 +81,10 @@ namespace DiabloLike.Core
             ChatText = $"Lovec: Level {dungeonLevel}. Kruh se probouzi.";
 
             ArenaFactory.BuildArena();
-            CreateSummoningPillars();
+            if (!IsBossLevel())
+            {
+                CreateSummoningPillars();
+            }
             player = ActorFactory.CreatePlayer().transform;
             playerHealth = player.GetComponent<Health>();
             playerMana = player.GetComponent<Mana>();
@@ -128,7 +131,14 @@ namespace DiabloLike.Core
             }
 
             hud.Configure(this);
-            SpawnWave();
+            if (IsBossLevel())
+            {
+                SpawnBoss();
+            }
+            else
+            {
+                SpawnWave();
+            }
         }
 
         private void Update()
@@ -251,6 +261,34 @@ namespace DiabloLike.Core
             }
 
             AddEvent($"Vlna {wave} byla vyvolana pillary.");
+        }
+
+        private bool IsBossLevel()
+        {
+            return dungeonLevel > 0 && dungeonLevel % 9 == 0;
+        }
+
+        private void SpawnBoss()
+        {
+            var boss = ActorFactory.CreateBoss(new Vector3(0f, 0f, 6f), player, dungeonLevel);
+            var health = boss.GetComponent<Health>();
+            health.Died += OnEnemyDied;
+            enemies.Add(health);
+            var minionCount = Mathf.Clamp(2 + dungeonLevel / 9, 2, 5);
+            for (var i = 0; i < minionCount; i++)
+            {
+                var angle = i * Mathf.PI * 2f / minionCount;
+                var minionPosition = boss.transform.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 3.2f;
+                var minion = ActorFactory.CreateEnemy(minionPosition, player, this, i % 3 == 0);
+                var minionHealth = minion.GetComponent<Health>();
+                minionHealth.IncreaseMax(dungeonLevel * 3);
+                minion.GetComponent<EnemyController>()?.SetSpeedBonus(dungeonLevel * 0.08f);
+                minionHealth.Died += OnEnemyDied;
+                enemies.Add(minionHealth);
+            }
+            QuestText = "BOSS FIGHT: zlom Rotmaw a prezij jeho laser a dash.";
+            ChatText = "Rotmaw: Utec, nebo shoříš.";
+            AddEvent("Boss Rotmaw vstoupil do runoveho kruhu.");
         }
 
         private void OnEnemyDied(Health enemy)
@@ -560,6 +598,13 @@ namespace DiabloLike.Core
         private void RollChestRewards()
         {
             currentRewardOptions.Clear();
+            if (IsBossLevel())
+            {
+                currentRewardOptions.Add(new ChestRewardOption(ChestRewardId.SplitShot, "Split Hex", "RARE\nwand bullets split immediately", true));
+                currentRewardOptions.Add(new ChestRewardOption(ChestRewardId.RareExplosion, "Blast Core", "RARE\nwand projectiles explode on hit", true));
+                currentRewardOptions.Add(new ChestRewardOption(ChestRewardId.SuperRareHardenedBullet, "Hardened Bullet", "SUPER RARE\ngold bullets\n+50% wand damage", true));
+                return;
+            }
             var pool = new List<ChestRewardOption>
             {
                 new(ChestRewardId.LifeUpgrade, "Blood Nick", "+15 max life\nsmall survival bump"),
@@ -663,7 +708,10 @@ namespace DiabloLike.Core
         {
             return objectName.StartsWith("Player - Rune Hunter")
                 || objectName.StartsWith("Possessed")
+                || objectName.StartsWith("Vlkodlak")
+                || objectName.StartsWith("Boss -")
                 || objectName.StartsWith("Enemy Projectile")
+                || objectName.StartsWith("Boss Projectile")
                 || objectName.StartsWith("Ashen Arena Floor")
                 || objectName.StartsWith("Blood Moon Key Light")
                 || objectName.StartsWith("Rune Stone")
