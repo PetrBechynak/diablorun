@@ -290,22 +290,9 @@ namespace DiabloLike.Core
         {
             swordVisual = new GameObject("Visible Sword");
             swordVisual.transform.SetParent(FindRightHand() ?? transform, false);
-            swordVisual.transform.localPosition = new Vector3(0.04f, -0.04f, 0.08f);
-            swordVisual.transform.localRotation = Quaternion.Euler(18f, 0f, -28f);
-            swordVisual.transform.localScale = Vector3.one * 0.58f;
-            var blade = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            blade.name = "Sword Blade";
-            blade.transform.SetParent(swordVisual.transform, false);
-            blade.transform.localPosition = new Vector3(0f, 0.62f, 0f);
-            blade.transform.localScale = new Vector3(0.12f, 1.25f, 0.06f);
-            blade.GetComponent<Renderer>().material = CreateWeaponMaterial(new Color(0.72f, 0.78f, 0.88f));
-            Object.Destroy(blade.GetComponent<Collider>());
-            var guard = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            guard.name = "Sword Guard";
-            guard.transform.SetParent(swordVisual.transform, false);
-            guard.transform.localScale = new Vector3(0.48f, 0.1f, 0.1f);
-            guard.GetComponent<Renderer>().material = CreateWeaponMaterial(new Color(0.78f, 0.42f, 0.08f));
-            Object.Destroy(guard.GetComponent<Collider>());
+            swordVisual.transform.localPosition = Vector3.zero;
+            swordVisual.transform.localRotation = Quaternion.identity;
+            swordVisual.transform.localScale = Vector3.one;
 
             wandVisual = new GameObject("Visible Ember Wand");
             wandVisual.transform.SetParent(FindRightHand() ?? transform, false);
@@ -334,8 +321,16 @@ namespace DiabloLike.Core
         {
             foreach (var child in GetComponentsInChildren<Transform>(true))
             {
+                var exact = child.name.ToLowerInvariant().Replace(" ", "").Replace("_", "").Replace("-", "");
+                if (exact == "handr" || exact == "righthand")
+                {
+                    return child;
+                }
+            }
+            foreach (var child in GetComponentsInChildren<Transform>(true))
+            {
                 var name = child.name.ToLowerInvariant().Replace(" ", "").Replace("-", "");
-                if (name.Contains("righthand") || name.Contains("hand_r") || name.Contains("hand.r"))
+                if (!name.Contains("ik") && (name.Contains("righthand") || name.Contains("hand_r") || name.Contains("hand.r")))
                 {
                     return child;
                 }

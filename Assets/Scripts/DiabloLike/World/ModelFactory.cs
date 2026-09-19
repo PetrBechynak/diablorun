@@ -19,7 +19,10 @@ namespace DiabloLike.World
                 importedPlayer.transform.localPosition = Vector3.zero;
                 importedPlayer.transform.localRotation = Quaternion.identity;
                 importedPlayer.transform.localScale = Vector3.one * 1.15f;
-                return (importedPlayer.transform, null);
+                var playerWeapon = AttachImportedWeapon(importedPlayer.transform,
+                    "Assets/Synty/SidekickCharacters/_Demos/Meshes/Weapons/Pirate_Sword/SK_Sword.fbx",
+                    "Equipped Sword", Vector3.zero, Quaternion.Euler(90f, 180f, 0f));
+                return (importedPlayer.transform, playerWeapon);
             }
 #endif
             var modelRoot = new GameObject("Model").transform;
@@ -53,6 +56,9 @@ namespace DiabloLike.World
                 importedEnemy.transform.localPosition = Vector3.zero;
                 importedEnemy.transform.localRotation = Quaternion.identity;
                 importedEnemy.transform.localScale = Vector3.one * 1.1f;
+                AttachImportedWeapon(importedEnemy.transform,
+                    "Assets/Synty/SidekickCharacters/_Demos/Meshes/Weapons/Goblin_Axe/SK_Axe.fbx",
+                    "Enemy Axe", new Vector3(0.04f, -0.02f, 0.06f), Quaternion.Euler(90f, 0f, 0f));
                 return importedEnemy.transform;
             }
 #endif
@@ -123,6 +129,82 @@ namespace DiabloLike.World
                 animator.runtimeAnimatorController = controller;
                 animator.applyRootMotion = false;
                 animator.enabled = true;
+            }
+        }
+
+        private static Transform AttachImportedWeapon(Transform parent, string assetPath, string objectName, Vector3 localPosition, Quaternion localRotation)
+        {
+            var weaponAsset = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+            if (weaponAsset == null)
+            {
+                return null;
+            }
+
+            var hand = FindRightHand(parent);
+            var weapon = Object.Instantiate(weaponAsset, hand != null ? hand : parent);
+            weapon.name = objectName;
+            weapon.transform.localPosition = localPosition;
+            weapon.transform.localRotation = localRotation;
+            weapon.transform.localScale = Vector3.one * 0.8f;
+            NormalizeWeaponMaterials(weapon);
+            foreach (var collider in weapon.GetComponentsInChildren<Collider>(true))
+            {
+                Object.Destroy(collider);
+            }
+            return weapon.transform;
+        }
+
+        private static Transform FindRightHand(Transform root)
+        {
+            // Prefer the deforming hand bone. IK targets such as ik_hand_r are
+            // not part of the animated skeleton and can leave a weapon behind.
+            foreach (var candidate in root.GetComponentsInChildren<Transform>(true))
+            {
+                var normalized = candidate.name.Replace(" ", "").Replace("_", "").ToLowerInvariant();
+                if (normalized == "handr" || normalized == "righthand" || normalized == "mixamorig:righthand")
+                {
+                    return candidate;
+                }
+            }
+            foreach (var candidate in root.GetComponentsInChildren<Transform>(true))
+            {
+                var normalized = candidate.name.Replace(" ", "").Replace("_", "").ToLowerInvariant();
+                if (!normalized.Contains("ik") && (normalized.EndsWith("righthand") || normalized.EndsWith("handr")))
+                {
+                    return candidate;
+                }
+            }
+            return null;
+        }
+
+        private static void NormalizeWeaponMaterials(GameObject weapon)
+        {
+            var urpShader = Shader.Find("Universal Render Pipeline/Lit");
+            if (urpShader == null)
+            {
+                return;
+            }
+
+            foreach (var renderer in weapon.GetComponentsInChildren<Renderer>(true))
+            {
+                var materials = renderer.materials;
+                for (var i = 0; i < materials.Length; i++)
+                {
+                    var source = materials[i];
+                    var texture = source != null && source.HasProperty("_MainTex") ? source.mainTexture : null;
+                    var color = source != null && source.HasProperty("_Color") ? source.color : Color.white;
+                    var normalized = new Material(urpShader)
+                    {
+                        name = $"{source?.name ?? "Weapon"} - URP"
+                    };
+                    normalized.color = color;
+                    if (texture != null)
+                    {
+                        normalized.mainTexture = texture;
+                    }
+                    materials[i] = normalized;
+                }
+                renderer.materials = materials;
             }
         }
 #endif

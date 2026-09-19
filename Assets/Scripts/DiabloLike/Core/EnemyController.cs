@@ -68,7 +68,8 @@ namespace DiabloLike.Core
 
         private void Update()
         {
-            if (target == null || targetHealth == null || targetHealth.IsDead)
+            if (controller == null || !controller.enabled || ownHealth == null || ownHealth.IsDead
+                || target == null || targetHealth == null || targetHealth.IsDead)
             {
                 return;
             }
