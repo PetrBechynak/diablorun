@@ -245,6 +245,13 @@ namespace DiabloLike.Core
             }
         }
 
+        // Used only by isolated automated combat tests; this follows the exact
+        // same attack path as the player's normal input.
+        public void TriggerAttackForTest()
+        {
+            Attack();
+        }
+
         private static bool CanHit(Faction faction)
         {
             return faction == Faction.Enemy || faction == Faction.Summoner;

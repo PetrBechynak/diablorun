@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DiabloLike.Core
 {
@@ -7,6 +8,12 @@ namespace DiabloLike.Core
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
         {
+            // The isolated VFX test scene must not start the gameplay bootstrap.
+            if (SceneManager.GetActiveScene().name == "SlashVfxTest")
+            {
+                return;
+            }
+
             if (Object.FindFirstObjectByType<GameDirector>() != null)
             {
                 return;

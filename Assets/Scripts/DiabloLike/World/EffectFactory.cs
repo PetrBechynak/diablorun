@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.VFX;
 
 namespace DiabloLike.World
 {
@@ -6,6 +7,28 @@ namespace DiabloLike.World
     {
         public static void SpawnSlash(Vector3 position, Quaternion rotation)
         {
+#if UNITY_EDITOR
+            var chargeSlash = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/slash5-HungNguyen/prefab/slash/white-black bolder.prefab");
+            if (chargeSlash != null)
+            {
+                var instance = Object.Instantiate(chargeSlash, position + Vector3.up * 0.18f, rotation);
+                instance.name = "Curved Sword Slash VFX";
+                instance.transform.localScale = Vector3.one * 1.25f;
+                foreach (var visualEffect in instance.GetComponentsInChildren<VisualEffect>(true))
+                {
+                    visualEffect.enabled = true;
+                    visualEffect.Reinit();
+                    visualEffect.Play();
+                }
+                instance.AddComponent<VfxBoundsOverride>().Configure(Vector3.one * 8f);
+                instance.AddComponent<SlashArcFallback>();
+                instance.AddComponent<SlashLifetime>();
+                Object.Destroy(instance, 0.5f);
+                return;
+            }
+#endif
+
             const int segments = 9;
             for (var i = 0; i < segments; i++)
             {
@@ -100,6 +123,125 @@ namespace DiabloLike.World
             var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             material.color = color;
             return material;
+        }
+    }
+
+    internal sealed class VfxBoundsOverride : MonoBehaviour
+    {
+        private Vector3 size;
+
+        public VfxBoundsOverride Configure(Vector3 boundsSize)
+        {
+            size = boundsSize;
+            return this;
+        }
+
+        private void LateUpdate()
+        {
+            var renderer = GetComponentInChildren<Renderer>();
+            if (renderer != null)
+            {
+                renderer.bounds = new Bounds(transform.position, size);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps the imported slash readable when the legacy VFX Graph asset is culled
+    /// by Unity 6 before it produces a particle. It is deliberately unlit,
+    /// transparent, shadowless and animated; it is not a world-space prop.
+    /// </summary>
+    internal sealed class SlashArcFallback : MonoBehaviour
+    {
+        private float age;
+        private Transform arc;
+        private Renderer arcRenderer;
+
+        private void Awake()
+        {
+            arc = new GameObject("Slash arc visual").transform;
+            arc.SetParent(transform, false);
+
+            var meshFilter = arc.gameObject.AddComponent<MeshFilter>();
+            var meshRenderer = arc.gameObject.AddComponent<MeshRenderer>();
+            meshFilter.sharedMesh = BuildMesh();
+            meshRenderer.sharedMaterial = BuildMaterial();
+            meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            meshRenderer.receiveShadows = false;
+            arcRenderer = meshRenderer;
+        }
+
+        private void Update()
+        {
+            age += Time.deltaTime;
+            var t = Mathf.Clamp01(age / 0.42f);
+            arc.localScale = Vector3.one * Mathf.Lerp(0.45f, 1.15f, Mathf.SmoothStep(0f, 1f, t));
+            // Mirror left/right across the player's front-to-back axis.
+            // This is a local Z flip, not a 180-degree turn around world Y.
+            arc.localRotation = Quaternion.Euler(180f, -45, 180f);
+            if (arcRenderer != null)
+                arcRenderer.material.color = Color.Lerp(new Color(1f, 1f, 1f, 0.98f), new Color(0.48f, 0.82f, 1f, 0.82f), t);
+        }
+
+        private static Mesh BuildMesh()
+        {
+            const int segments = 28;
+            var vertices = new Vector3[(segments + 1) * 2];
+            var triangles = new int[segments * 6];
+            for (var i = 0; i <= segments; i++)
+            {
+                var t = i / (float)segments;
+                var angle = Mathf.Lerp(-68f, 68f, t) * Mathf.Deg2Rad;
+                var radius = Mathf.Lerp(0.55f, 1.75f, t);
+                var width = Mathf.Lerp(0.17f, 0.045f, t) * Mathf.Sin(t * Mathf.PI);
+                var direction = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle));
+                var side = new Vector3(Mathf.Cos(angle), 0f, -Mathf.Sin(angle));
+                var center = direction * radius;
+                vertices[i * 2] = center - side * width;
+                vertices[i * 2 + 1] = center + side * width;
+                if (i == segments) continue;
+                var v = i * 2;
+                var q = i * 6;
+                triangles[q] = v;
+                triangles[q + 1] = v + 2;
+                triangles[q + 2] = v + 1;
+                triangles[q + 3] = v + 1;
+                triangles[q + 4] = v + 2;
+                triangles[q + 5] = v + 3;
+            }
+
+            var mesh = new Mesh { name = "Runtime Slash Arc" };
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static Material BuildMaterial()
+        {
+            var material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            material.color = new Color(0.62f, 0.86f, 1f, 0.92f);
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
+            material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetInt("_ZWrite", 0);
+            material.renderQueue = 3000;
+            return material;
+        }
+    }
+
+    internal sealed class SlashLifetime : MonoBehaviour
+    {
+        private void Awake()
+        {
+            Invoke(nameof(Remove), 0.5f);
+        }
+
+        private void Remove()
+        {
+            gameObject.SetActive(false);
+            Destroy(gameObject);
         }
     }
 }
