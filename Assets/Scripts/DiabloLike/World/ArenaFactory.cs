@@ -227,6 +227,7 @@ namespace DiabloLike.World
                 imported.transform.localScale = Vector3.one * 0.85f;
                 NormalizeImportedMaterials(imported);
                 foreach (var collider in imported.GetComponentsInChildren<Collider>()) Object.Destroy(collider);
+                AddBoundsCollider(imported);
                 return;
             }
 #endif
@@ -235,7 +236,13 @@ namespace DiabloLike.World
             baseStone.transform.position = position + Vector3.up * 0.75f;
             baseStone.transform.localScale = new Vector3(0.7f, 0.75f, 0.7f);
             baseStone.GetComponent<Renderer>().material = metalMaterial;
-            Object.Destroy(baseStone.GetComponent<Collider>());
+            var baseCollider = baseStone.GetComponent<CapsuleCollider>();
+            if (baseCollider != null)
+            {
+                baseCollider.direction = 1;
+                baseCollider.radius = 0.25f;
+                baseCollider.height = 1f;
+            }
 
             var crystal = GameObject.CreatePrimitive(PrimitiveType.Cube);
             crystal.name = "Arena Decoration - Pillar Flame";
@@ -243,6 +250,31 @@ namespace DiabloLike.World
             crystal.transform.localScale = Vector3.one * 0.42f;
             crystal.GetComponent<Renderer>().material = angle % 2f > 1f ? crystalMaterial : emberMaterial;
             Object.Destroy(crystal.GetComponent<Collider>());
+        }
+
+        private static void AddBoundsCollider(GameObject root)
+        {
+            var renderers = root.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+            {
+                return;
+            }
+
+            var bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            var collider = root.AddComponent<CapsuleCollider>();
+            collider.direction = 1;
+            collider.center = root.transform.InverseTransformPoint(bounds.center);
+            var scale = root.transform.lossyScale;
+            var worldRadius = Mathf.Max(bounds.size.x, bounds.size.z) * 0.25f;
+            collider.radius = worldRadius / Mathf.Max(0.001f, Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z)));
+            collider.height = Mathf.Max(
+                collider.radius * 2f,
+                bounds.size.y * 0.5f / Mathf.Max(0.001f, Mathf.Abs(scale.y)));
         }
 
         private static GameObject CreateRockAsset(int index)

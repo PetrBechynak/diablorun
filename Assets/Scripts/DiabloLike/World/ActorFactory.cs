@@ -80,9 +80,11 @@ namespace DiabloLike.World
         {
             var vase = CreateAssetVase(position, height);
             vase.name = "Summoning Vase";
-            var collider = vase.AddComponent<BoxCollider>();
-            collider.center = new Vector3(0f, height * 0.5f, 0f);
-            collider.size = new Vector3(1f, height, 1f);
+            var collider = vase.AddComponent<CapsuleCollider>();
+            collider.direction = 1;
+            collider.center = new Vector3(0f, height * 0.25f, 0f);
+            collider.radius = 0.25f;
+            collider.height = Mathf.Max(0.5f, height * 0.5f);
             vase.AddComponent<Health>().Configure(Mathf.RoundToInt(120 + height * 25f));
             vase.AddComponent<CombatFaction>().Configure(Faction.Summoner);
             vase.AddComponent<EnemyHealthBar>();
