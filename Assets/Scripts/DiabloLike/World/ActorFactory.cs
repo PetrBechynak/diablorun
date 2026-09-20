@@ -195,7 +195,7 @@ namespace DiabloLike.World
             camera.fieldOfView = 42f;
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 120f;
-            cameraObject.transform.position = target.position + new Vector3(0f, 13f, -10f);
+            cameraObject.transform.position = target.position + new Vector3(0f, 16.9f, -13f);
             var follow = cameraObject.GetComponent<CameraFollow>();
             if (follow == null)
             {

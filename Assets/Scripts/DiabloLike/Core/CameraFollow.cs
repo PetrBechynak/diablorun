@@ -5,7 +5,7 @@ namespace DiabloLike.Core
     public sealed class CameraFollow : MonoBehaviour
     {
         [SerializeField] private Transform target;
-        [SerializeField] private Vector3 offset = new(0f, 13f, -10f);
+        [SerializeField] private Vector3 offset = new(0f, 16.9f, -13f);
         [SerializeField] private float smoothTime = 0.12f;
 
         private Vector3 velocity;
