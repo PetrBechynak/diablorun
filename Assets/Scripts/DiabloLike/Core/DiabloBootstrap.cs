@@ -9,7 +9,8 @@ namespace DiabloLike.Core
         private static void Boot()
         {
             // The isolated VFX test scene must not start the gameplay bootstrap.
-            if (SceneManager.GetActiveScene().name == "SlashVfxTest")
+            if (SceneManager.GetActiveScene().name == "SlashVfxTest"
+                || SceneManager.GetActiveScene().name == "PlayerOnlyTestScene")
             {
                 return;
             }
