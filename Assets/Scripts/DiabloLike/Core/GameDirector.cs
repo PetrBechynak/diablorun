@@ -47,6 +47,12 @@ namespace DiabloLike.Core
         private int wave;
         private float nextEncounterCheck;
 
+        [Header("Arena layouts")]
+        [SerializeField] private ArenaLayout arena01;
+        [SerializeField] private ArenaLayout arena02;
+        [SerializeField] private ArenaLayout bossArena;
+        private ArenaLayout activeArena;
+
         public AIFeatureRouter AI { get; } = new();
         public string QuestText { get; private set; } = "Znic summoning vases.";
         public string ChatText { get; private set; } = "Lovec: Runovy kruh se probouzi.";
@@ -62,7 +68,27 @@ namespace DiabloLike.Core
 
         private void Start()
         {
+            DiscoverArenaLayouts();
             BeginRun();
+        }
+
+        private void DiscoverArenaLayouts()
+        {
+            foreach (var layout in FindObjectsByType<ArenaLayout>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                switch (layout.name)
+                {
+                    case "Arena01":
+                        arena01 ??= layout;
+                        break;
+                    case "Arena02":
+                        arena02 ??= layout;
+                        break;
+                    case "BossArena":
+                        bossArena ??= layout;
+                        break;
+                }
+            }
         }
 
         private void BeginRun()
@@ -80,12 +106,18 @@ namespace DiabloLike.Core
             QuestText = $"Level {dungeonLevel}: znic summoning vases.";
             ChatText = $"Lovec: Level {dungeonLevel}. Kruh se probouzi.";
 
-            ArenaFactory.BuildArena();
+            activeArena = SelectArenaLayout();
+            ActivateArena(activeArena);
+            if (activeArena == null)
+            {
+                ArenaFactory.BuildArena();
+            }
             if (!IsBossLevel() && !IsMiniBossLevel())
             {
                 CreateSummoningVases();
             }
             player = ActorFactory.CreatePlayer().transform;
+            player.position = activeArena != null ? activeArena.PlayerSpawn.position : Vector3.zero;
             playerHealth = player.GetComponent<Health>();
             playerMana = player.GetComponent<Mana>();
             playerHealth.IncreaseMax(lifeBonus);
@@ -578,10 +610,51 @@ namespace DiabloLike.Core
         private void CreateSummoningVases()
         {
             var heightBonus = (dungeonLevel - 1) * 0.1f;
+            if (activeArena != null && activeArena.VaseSpawns.Length > 0)
+            {
+                foreach (var spawn in activeArena.VaseSpawns)
+                {
+                    if (spawn != null)
+                    {
+                        RegisterVase(ActorFactory.CreateSummoningVase(
+                            spawn.position, 2.4f + heightBonus, this));
+                    }
+                }
+
+                return;
+            }
+
             RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(-8f, 0f, -7f), 2.8f + heightBonus, this));
             RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(8f, 0f, -6f), 2.2f + heightBonus, this));
             RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(-7f, 0f, 8f), 1.9f + heightBonus, this));
             RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(7f, 0f, 7f), 3.1f + heightBonus, this));
+        }
+
+        private ArenaLayout SelectArenaLayout()
+        {
+            if (IsBossLevel() && bossArena != null)
+            {
+                return bossArena;
+            }
+
+            if (dungeonLevel >= 4 && arena02 != null)
+            {
+                return arena02;
+            }
+
+            return arena01;
+        }
+
+        private void ActivateArena(ArenaLayout selected)
+        {
+            var layouts = new[] { arena01, arena02, bossArena };
+            foreach (var layout in layouts)
+            {
+                if (layout != null)
+                {
+                    layout.gameObject.SetActive(layout == selected);
+                }
+            }
         }
 
         private void SpawnRewardChest()
@@ -592,7 +665,10 @@ namespace DiabloLike.Core
             }
 
             rewardChestSpawned = true;
-            ActorFactory.CreateUpgradeChest(new Vector3(0f, 0f, 2.2f), this);
+            var position = activeArena != null
+                ? activeArena.ChestSpawn.position
+                : new Vector3(0f, 0f, 2.2f);
+            ActorFactory.CreateUpgradeChest(position, this);
         }
 
         private void SpawnPortal()
@@ -604,7 +680,10 @@ namespace DiabloLike.Core
 
             portalSpawned = true;
             DiabloAudio.Play(GameSfx.PortalOpen, 0.04f);
-            ActorFactory.CreateLevelPortal(new Vector3(0f, 0f, -3.2f), this);
+            var position = activeArena != null
+                ? activeArena.PortalSpawn.position
+                : new Vector3(0f, 0f, -3.2f);
+            ActorFactory.CreateLevelPortal(position, this);
         }
 
         private void RollChestRewards()
