@@ -8,6 +8,7 @@ namespace DiabloLike.Core
         [SerializeField] private Transform weapon;
         [SerializeField] private float bobAmount = 0.08f;
         [SerializeField] private float bobSpeed = 9f;
+        [SerializeField] private float walkAnimationPlaybackSpeed = 4f;
 
         private Vector3 lastPosition;
         private Vector3 modelStartLocalPosition;
@@ -47,16 +48,18 @@ namespace DiabloLike.Core
             var velocity = (transform.position - lastPosition) / Mathf.Max(Time.deltaTime, 0.0001f);
             velocity.y = 0f;
             lastPosition = transform.position;
+            var isWalking = velocity.sqrMagnitude > 0.04f;
 
             if (animator != null && animator.runtimeAnimatorController != null)
             {
+                animator.speed = isWalking ? walkAnimationPlaybackSpeed : 1f;
                 animator.SetFloat("Speed", velocity.magnitude);
                 var localVelocity = transform.InverseTransformDirection(velocity);
                 animator.SetFloat("MoveX", Mathf.Clamp(localVelocity.x / 3f, -1f, 1f));
                 animator.SetFloat("MoveY", Mathf.Clamp(localVelocity.z / 3f, -1f, 1f));
             }
 
-            moving = moving || velocity.sqrMagnitude > 0.04f;
+            moving = moving || isWalking;
             var bob = moving ? Mathf.Sin(Time.time * bobSpeed) * bobAmount : Mathf.Sin(Time.time * 2.2f) * bobAmount * 0.35f;
             var hit = Mathf.MoveTowards(hitPulse, 0f, Time.deltaTime * 5f);
             hitPulse = hit;
