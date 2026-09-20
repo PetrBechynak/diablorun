@@ -20,6 +20,7 @@ namespace DiabloLike.Core
             }
 
             var director = new GameObject("DiabloLike Game Director");
+            Object.DontDestroyOnLoad(director);
             director.AddComponent<GameDirector>();
         }
     }

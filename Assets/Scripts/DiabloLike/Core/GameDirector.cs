@@ -6,6 +6,7 @@ using DiabloLike.Combat;
 using DiabloLike.UI;
 using DiabloLike.World;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DiabloLike.Core
 {
@@ -46,11 +47,8 @@ namespace DiabloLike.Core
         private int cachedPlayerMaxMana;
         private int wave;
         private float nextEncounterCheck;
+        private Scene arenaScene;
 
-        [Header("Arena layouts")]
-        [SerializeField] private ArenaLayout arena01;
-        [SerializeField] private ArenaLayout arena02;
-        [SerializeField] private ArenaLayout bossArena;
         private ArenaLayout activeArena;
 
         public AIFeatureRouter AI { get; } = new();
@@ -68,30 +66,10 @@ namespace DiabloLike.Core
 
         private void Start()
         {
-            DiscoverArenaLayouts();
-            BeginRun();
+            StartCoroutine(BeginRun());
         }
 
-        private void DiscoverArenaLayouts()
-        {
-            foreach (var layout in FindObjectsByType<ArenaLayout>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                switch (layout.name)
-                {
-                    case "Arena01":
-                        arena01 ??= layout;
-                        break;
-                    case "Arena02":
-                        arena02 ??= layout;
-                        break;
-                    case "BossArena":
-                        bossArena ??= layout;
-                        break;
-                }
-            }
-        }
-
-        private void BeginRun()
+        private IEnumerator BeginRun()
         {
             enemies.Clear();
             vases.Clear();
@@ -106,8 +84,7 @@ namespace DiabloLike.Core
             QuestText = $"Level {dungeonLevel}: znic summoning vases.";
             ChatText = $"Lovec: Level {dungeonLevel}. Kruh se probouzi.";
 
-            activeArena = SelectArenaLayout();
-            ActivateArena(activeArena);
+            yield return LoadArenaForCurrentLevel();
             if (activeArena == null)
             {
                 ArenaFactory.BuildArena();
@@ -579,7 +556,7 @@ namespace DiabloLike.Core
             }
             CleanupRunObjects();
             yield return null;
-            BeginRun();
+            yield return BeginRun();
             restarting = false;
         }
 
@@ -630,31 +607,77 @@ namespace DiabloLike.Core
             RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(7f, 0f, 7f), 3.1f + heightBonus, this));
         }
 
-        private ArenaLayout SelectArenaLayout()
+        private string GetArenaSceneName()
         {
-            if (IsBossLevel() && bossArena != null)
+            if (IsBossLevel())
             {
-                return bossArena;
+                return "BossArena";
             }
 
-            if (dungeonLevel >= 4 && arena02 != null)
-            {
-                return arena02;
-            }
-
-            return arena01;
+            return dungeonLevel >= 4 ? "Arena02" : "Arena01";
         }
 
-        private void ActivateArena(ArenaLayout selected)
+        private IEnumerator LoadArenaForCurrentLevel()
         {
-            var layouts = new[] { arena01, arena02, bossArena };
-            foreach (var layout in layouts)
+            var sceneName = GetArenaSceneName();
+            if (!arenaScene.IsValid() || !arenaScene.isLoaded)
             {
-                if (layout != null)
+                var currentScene = SceneManager.GetActiveScene();
+                var currentLayout = FindArenaLayout(currentScene);
+                if (currentScene.IsValid() && currentScene.isLoaded && currentLayout != null)
                 {
-                    layout.gameObject.SetActive(layout == selected);
+                    arenaScene = currentScene;
+                    activeArena = currentLayout;
+                    yield break;
                 }
             }
+
+            if (arenaScene.IsValid() && arenaScene.isLoaded && arenaScene.name == sceneName)
+            {
+                activeArena = FindArenaLayout(arenaScene);
+                yield break;
+            }
+
+            var previousArenaScene = arenaScene;
+            var operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            if (operation == null)
+            {
+                yield break;
+            }
+
+            yield return operation;
+            arenaScene = SceneManager.GetSceneByName(sceneName);
+            if (arenaScene.IsValid() && arenaScene.isLoaded)
+            {
+                activeArena = FindArenaLayout(arenaScene);
+                SceneManager.SetActiveScene(arenaScene);
+            }
+
+            if (previousArenaScene.IsValid()
+                && previousArenaScene.isLoaded
+                && previousArenaScene != arenaScene)
+            {
+                yield return SceneManager.UnloadSceneAsync(previousArenaScene);
+            }
+        }
+
+        private static ArenaLayout FindArenaLayout(Scene scene)
+        {
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                return null;
+            }
+
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                var layout = root.GetComponentInChildren<ArenaLayout>(true);
+                if (layout != null)
+                {
+                    return layout;
+                }
+            }
+
+            return null;
         }
 
         private void SpawnRewardChest()
