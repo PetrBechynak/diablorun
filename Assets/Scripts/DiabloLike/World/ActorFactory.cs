@@ -76,31 +76,31 @@ namespace DiabloLike.World
             return boss;
         }
 
-        public static GameObject CreateSummoningPillar(Vector3 position, float height, GameDirector director)
+        public static GameObject CreateSummoningVase(Vector3 position, float height, GameDirector director)
         {
-            var pillar = CreateAssetPillar(position, height);
-            pillar.name = "Summoning Pillar";
-            var collider = pillar.AddComponent<BoxCollider>();
+            var vase = CreateAssetVase(position, height);
+            vase.name = "Summoning Vase";
+            var collider = vase.AddComponent<BoxCollider>();
             collider.center = new Vector3(0f, height * 0.5f, 0f);
             collider.size = new Vector3(1f, height, 1f);
-            pillar.AddComponent<Health>().Configure(Mathf.RoundToInt(120 + height * 25f));
-            pillar.AddComponent<CombatFaction>().Configure(Faction.Summoner);
-            pillar.AddComponent<EnemyHealthBar>();
-            pillar.AddComponent<SummoningPillar>().Configure(director);
-            return pillar;
+            vase.AddComponent<Health>().Configure(Mathf.RoundToInt(120 + height * 25f));
+            vase.AddComponent<CombatFaction>().Configure(Faction.Summoner);
+            vase.AddComponent<EnemyHealthBar>();
+            vase.AddComponent<SummoningVase>().Configure(director);
+            return vase;
         }
 
-        private static GameObject CreateAssetPillar(Vector3 position, float height)
+        private static GameObject CreateAssetVase(Vector3 position, float height)
         {
 #if UNITY_EDITOR
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/Low Poly Trim Sheet Asset Collection/TrimSheet_Prefabs/Pillar.prefab");
+                "Assets/Low Poly Trim Sheet Asset Collection/TrimSheet_Prefabs/Vase.prefab");
             if (prefab != null)
             {
                 var imported = Object.Instantiate(prefab);
-                imported.name = "Destructible Stone Pillar";
+                imported.name = "Destructible Vase";
                 imported.transform.position = position;
-                imported.transform.localScale = new Vector3(1.2f, Mathf.Max(0.8f, height / 2.5f), 1.2f);
+                imported.transform.localScale = Vector3.one * Mathf.Clamp(height / 2.5f, 0.8f, 1.35f);
                 NormalizeImportedMaterials(imported);
                 return imported;
             }
@@ -118,7 +118,7 @@ namespace DiabloLike.World
                 for (var i = 0; i < materials.Length; i++)
                 {
                     var source = materials[i];
-                    var normalized = new Material(shader) { name = $"{source?.name ?? "Pillar"} - URP" };
+                    var normalized = new Material(shader) { name = $"{source?.name ?? "Vase"} - URP" };
                     if (source != null)
                     {
                         if (source.HasProperty("_MainTex")) normalized.mainTexture = source.mainTexture;

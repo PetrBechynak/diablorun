@@ -13,7 +13,7 @@ namespace DiabloLike.Core
     {
         private const int MaxUpgradeSlots = 10;
         private readonly List<Health> enemies = new();
-        private readonly List<SummoningPillar> pillars = new();
+        private readonly List<SummoningVase> vases = new();
         private readonly List<string> recentEvents = new();
         private readonly List<ChestRewardOption> currentRewardOptions = new();
         private readonly List<ChestRewardOption> acquiredUpgrades = new();
@@ -48,7 +48,7 @@ namespace DiabloLike.Core
         private float nextEncounterCheck;
 
         public AIFeatureRouter AI { get; } = new();
-        public string QuestText { get; private set; } = "Znic summoning pillary.";
+        public string QuestText { get; private set; } = "Znic summoning vases.";
         public string ChatText { get; private set; } = "Lovec: Runovy kruh se probouzi.";
         public bool IsPlayerDead => playerDead;
         public bool IsInventoryOpen { get; private set; }
@@ -68,7 +68,7 @@ namespace DiabloLike.Core
         private void BeginRun()
         {
             enemies.Clear();
-            pillars.Clear();
+            vases.Clear();
             recentEvents.Clear();
             playerDead = false;
             IsInventoryOpen = false;
@@ -77,13 +77,13 @@ namespace DiabloLike.Core
             portalSpawned = false;
             wave = 0;
             nextEncounterCheck = 0f;
-            QuestText = $"Level {dungeonLevel}: znic summoning pillary.";
+            QuestText = $"Level {dungeonLevel}: znic summoning vases.";
             ChatText = $"Lovec: Level {dungeonLevel}. Kruh se probouzi.";
 
             ArenaFactory.BuildArena();
             if (!IsBossLevel() && !IsMiniBossLevel())
             {
-                CreateSummoningPillars();
+                CreateSummoningVases();
             }
             player = ActorFactory.CreatePlayer().transform;
             playerHealth = player.GetComponent<Health>();
@@ -149,7 +149,7 @@ namespace DiabloLike.Core
             }
 
             enemies.RemoveAll(enemy => enemy == null || enemy.IsDead);
-            pillars.RemoveAll(pillar => pillar == null || !pillar.IsAlive);
+            vases.RemoveAll(vase => vase == null || !vase.IsAlive);
 
             if (Time.time >= nextEncounterCheck)
             {
@@ -213,17 +213,17 @@ namespace DiabloLike.Core
             }
 
             var quest = AI.Ask(new AIRequest(AIFeature.Quest, "quest_director", "", CreateSnapshot()));
-            QuestText = AlivePillarCount() > 0
-                ? $"Znic summoning pillary: {AlivePillarCount()} zbyva. Nepratele proudi z jejich run."
-                : "Pillary jsou rozbite. Docisti zbytek posedlych.";
+            QuestText = AliveVaseCount() > 0
+                ? $"Znic summoning vases: {AliveVaseCount()} zbyva. Nepratele proudi z jejich run."
+                : "Vazy jsou rozbite. Docisti zbytek posedlych.";
 
             var encounter = AI.Ask(new AIRequest(AIFeature.Encounter, "encounter_director", "", CreateSnapshot()));
-            if (encounter.Intent == "spawn_wave" && AlivePillarCount() > 0)
+            if (encounter.Intent == "spawn_wave" && AliveVaseCount() > 0)
             {
                 SpawnWave();
             }
 
-            if (AlivePillarCount() <= 0 && enemies.Count <= 0)
+            if (AliveVaseCount() <= 0 && enemies.Count <= 0)
             {
                 QuestText = rewardChestSpawned ? "Otevri chestku a vyber upgrade." : "Kruh je ocisteny. Objevila se chestka.";
                 ChatText = "Lovec: Zdroje summonu jsou mrtve.";
@@ -238,21 +238,21 @@ namespace DiabloLike.Core
                 return;
             }
 
-            var alivePillars = GetAlivePillars();
-            if (alivePillars.Count <= 0)
+            var aliveVases = GetAliveVases();
+            if (aliveVases.Count <= 0)
             {
                 return;
             }
 
             wave++;
             var levelBonusWave = Mathf.FloorToInt((dungeonLevel - 1) * 0.5f);
-            var count = Mathf.Clamp(alivePillars.Count + wave + levelBonusWave, 2, 8);
+            var count = Mathf.Clamp(aliveVases.Count + wave + levelBonusWave, 2, 8);
             for (var i = 0; i < count; i++)
             {
-                var pillar = alivePillars[i % alivePillars.Count];
+                var vase = aliveVases[i % aliveVases.Count];
                 var angle = Random.Range(0f, Mathf.PI * 2f);
                 var offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * Random.Range(1.5f, 2.8f);
-                var position = pillar.transform.position + offset;
+                var position = vase.transform.position + offset;
                 var spawnRanged = wave > 1 && Random.value < Mathf.Min(0.32f, 0.12f + dungeonLevel * 0.03f);
                 var enemy = ActorFactory.CreateEnemy(position, player, this, spawnRanged);
                 var health = enemy.GetComponent<Health>();
@@ -260,7 +260,7 @@ namespace DiabloLike.Core
                 enemies.Add(health);
             }
 
-            AddEvent($"Vlna {wave} byla vyvolana pillary.");
+            AddEvent($"Vlna {wave} byla vyvolana vázami.");
         }
 
         private bool IsBossLevel()
@@ -311,18 +311,18 @@ namespace DiabloLike.Core
             AddEvent("Hrac zemrel.");
         }
 
-        public void OnPillarDestroyed(SummoningPillar pillar)
+        public void OnVaseDestroyed(SummoningVase vase)
         {
-            pillars.Remove(pillar);
-            EffectFactory.SpawnHit(pillar.transform.position + Vector3.up);
-            AddEvent("Summoning pillar se rozpadl.");
-            if (AlivePillarCount() > 0)
+            vases.Remove(vase);
+            EffectFactory.SpawnHit(vase.transform.position + Vector3.up);
+            AddEvent("Summoning vase se rozpadla.");
+            if (AliveVaseCount() > 0)
             {
-                QuestText = $"Pillar znicen. {AlivePillarCount()} jeste drzi portal.";
+                QuestText = $"Vase znicena. {AliveVaseCount()} jeste drzi portal.";
                 return;
             }
 
-            QuestText = "Vsechny pillary jsou znicene. Chestka se objevila.";
+            QuestText = "Vsechny vazy jsou znicene. Chestka se objevila.";
             ChatText = "Lovec: Vyber upgrade, pak projdi portalem.";
             SpawnRewardChest();
         }
@@ -575,13 +575,13 @@ namespace DiabloLike.Core
             EquippedWeapon = WeaponCatalog.Sword;
         }
 
-        private void CreateSummoningPillars()
+        private void CreateSummoningVases()
         {
             var heightBonus = (dungeonLevel - 1) * 0.1f;
-            RegisterPillar(ActorFactory.CreateSummoningPillar(new Vector3(-8f, 0f, -7f), 2.8f + heightBonus, this));
-            RegisterPillar(ActorFactory.CreateSummoningPillar(new Vector3(8f, 0f, -6f), 2.2f + heightBonus, this));
-            RegisterPillar(ActorFactory.CreateSummoningPillar(new Vector3(-7f, 0f, 8f), 1.9f + heightBonus, this));
-            RegisterPillar(ActorFactory.CreateSummoningPillar(new Vector3(7f, 0f, 7f), 3.1f + heightBonus, this));
+            RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(-8f, 0f, -7f), 2.8f + heightBonus, this));
+            RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(8f, 0f, -6f), 2.2f + heightBonus, this));
+            RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(-7f, 0f, 8f), 1.9f + heightBonus, this));
+            RegisterVase(ActorFactory.CreateSummoningVase(new Vector3(7f, 0f, 7f), 3.1f + heightBonus, this));
         }
 
         private void SpawnRewardChest()
@@ -683,17 +683,17 @@ namespace DiabloLike.Core
             }
         }
 
-        private void RegisterPillar(GameObject pillar)
+        private void RegisterVase(GameObject vase)
         {
-            pillars.Add(pillar.GetComponent<SummoningPillar>());
+            vases.Add(vase.GetComponent<SummoningVase>());
         }
 
-        private int AlivePillarCount()
+        private int AliveVaseCount()
         {
             var alive = 0;
-            foreach (var pillar in pillars)
+            foreach (var vase in vases)
             {
-                if (pillar != null && pillar.IsAlive)
+                if (vase != null && vase.IsAlive)
                 {
                     alive++;
                 }
@@ -702,18 +702,18 @@ namespace DiabloLike.Core
             return alive;
         }
 
-        private List<SummoningPillar> GetAlivePillars()
+        private List<SummoningVase> GetAliveVases()
         {
-            var alivePillars = new List<SummoningPillar>();
-            foreach (var pillar in pillars)
+            var aliveVases = new List<SummoningVase>();
+            foreach (var vase in vases)
             {
-                if (pillar != null && pillar.IsAlive)
+                if (vase != null && vase.IsAlive)
                 {
-                    alivePillars.Add(pillar);
+                    aliveVases.Add(vase);
                 }
             }
 
-            return alivePillars;
+            return aliveVases;
         }
 
         private static bool IsRuntimeObject(string objectName)
@@ -730,7 +730,7 @@ namespace DiabloLike.Core
                 || objectName.StartsWith("Blood Moon Key Light")
                 || objectName.StartsWith("Rune Stone")
                 || objectName.StartsWith("Broken Obelisk")
-                || objectName.StartsWith("Summoning Pillar")
+                || objectName.StartsWith("Summoning Vase")
                 || objectName.StartsWith("Blood Essence Loot")
                 || objectName.StartsWith("Combat Spark")
                 || objectName.StartsWith("Curved Sword Slash VFX")

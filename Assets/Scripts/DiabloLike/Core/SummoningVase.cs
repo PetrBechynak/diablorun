@@ -4,7 +4,7 @@ using UnityEngine;
 namespace DiabloLike.Core
 {
     [RequireComponent(typeof(Health))]
-    public sealed class SummoningPillar : MonoBehaviour
+    public sealed class SummoningVase : MonoBehaviour
     {
         private GameDirector director;
         private Health health;
@@ -24,7 +24,7 @@ namespace DiabloLike.Core
 
         private void OnDied(Health deadHealth)
         {
-            director?.OnPillarDestroyed(this);
+            director?.OnVaseDestroyed(this);
         }
     }
 }

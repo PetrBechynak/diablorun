@@ -109,7 +109,7 @@ namespace DiabloLike.Core
         {
             "Sedlo? Sedlo.",
             "A hrdina zakopava o realitu.",
-            "Tohle bylo za vsechny pillary.",
+            "Tohle bylo za vsechny vazy.",
             "Krasne krupnuti.",
             "Mas tam novy otvor.",
             "Dalsi lekce zdarma.",
