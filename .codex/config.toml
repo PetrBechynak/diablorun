@@ -1,0 +1,8 @@
+# Connect Codex only to the Unity Editor instance serving this project.
+# The Unity MCP relay is installed by com.unity.ai.assistant.
+[mcp_servers.unity]
+command = "C:\\Users\\pbech\\.unity\\relay\\relay_win.exe"
+args = ["--mcp", "--project-path", "C:\\Users\\pbech\\My project"]
+enabled = true
+startup_timeout_sec = 30
+tool_timeout_sec = 120

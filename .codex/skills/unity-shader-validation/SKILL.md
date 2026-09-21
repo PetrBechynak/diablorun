@@ -22,6 +22,17 @@ After every material, shader, scene, prefab, rendering, or code change that may 
 
 Do not declare the rendering change complete based only on a successful compile. A clean console is not proof that runtime materials render correctly.
 
+## Unity MCP connection gate
+
+In this project, Unity can request approval for the `codex-mcp-client` connection whenever an Editor instance starts or reconnects. Treat this as a required preflight step for every Unity QA run.
+
+1. Before using Unity MCP, verify that the target QA Editor reports an active connection and that its project path is the intended QA worktree.
+2. If Unity presents the connection approval dialog, stop. Tell the user that this QA instance needs its MCP connection allowed; do not automate or bypass the `Allow` decision.
+3. Do not assume approval in the human's Unity Editor also authorizes a separate QA Unity instance. On its first launch, explicitly verify the connection there.
+4. If the connection is unavailable after approval, report the blocked QA run with the target project path and do not modify scenes, GameObjects, assets, or Play Mode through another Unity instance.
+
+This gate applies to all Unity MCP operations, including Console access, commands, and captures. It prevents a QA agent from accidentally controlling the human's active Editor.
+
 ## Diagnosis priorities
 
 - Confirm the active render pipeline and quality-level pipeline assignment.
